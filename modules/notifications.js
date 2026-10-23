@@ -6,6 +6,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 export const NotificationPeek = GObject.registerClass({
     Signals: {
         'peek': {param_types: [GObject.TYPE_JSOBJECT, GObject.TYPE_JSOBJECT]},
+        'history-changed': {},
     },
 }, class NotificationPeek extends GObject.Object {
     _init(settings) {
@@ -20,7 +21,28 @@ export const NotificationPeek = GObject.registerClass({
         const tray = Main.messageTray;
         if (!tray) return;
         this._sourceAddedId = tray.connect('source-added', (_, source) => this._trackSource(source));
+        this._sourceRemovedId = tray.connect('source-removed', () => this._historyChanged());
         for (const source of tray.getSources()) this._trackSource(source);
+    }
+
+    /* Everything still in GNOME's message tray, newest first. */
+    history() {
+        const items = [];
+        for (const source of Main.messageTray?.getSources() ?? []) {
+            for (const notif of source.notifications ?? [])
+                items.push({source, notif});
+        }
+        const t = n => n.datetime?.to_unix?.() ?? 0;
+        return items.sort((a, b) => t(b.notif) - t(a.notif));
+    }
+
+    _historyChanged() {
+        if (this._historyIdle) return;   // coalesce bursts (e.g. "clear all")
+        this._historyIdle = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+            this._historyIdle = 0;
+            this.emit('history-changed');
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     stop() {
@@ -28,8 +50,14 @@ export const NotificationPeek = GObject.registerClass({
             try { Main.messageTray.disconnect(this._sourceAddedId); } catch (_) {}
             this._sourceAddedId = 0;
         }
+        if (this._sourceRemovedId) {
+            try { Main.messageTray.disconnect(this._sourceRemovedId); } catch (_) {}
+            this._sourceRemovedId = 0;
+        }
+        if (this._historyIdle) { GLib.source_remove(this._historyIdle); this._historyIdle = 0; }
         for (const [source, rec] of this._sourceConns) {
             try { if (rec?.addedId)   source.disconnect(rec.addedId);   } catch (_) {}
+            try { if (rec?.removedId) source.disconnect(rec.removedId); } catch (_) {}
             try { if (rec?.destroyId) source.disconnect(rec.destroyId); } catch (_) {}
         }
         this._sourceConns.clear();
@@ -42,16 +70,20 @@ export const NotificationPeek = GObject.registerClass({
     _trackSource(source) {
         if (this._sourceConns.has(source)) return;
         const addedId = source.connect('notification-added', (_, notif) => this._onNotif(source, notif));
+        const removedId = source.connect('notification-removed', () => this._historyChanged());
         const destroyId = source.connect('destroy', () => {
             const rec = this._sourceConns.get(source);
             if (rec?.addedId)   { try { source.disconnect(rec.addedId); }   catch (_) {} }
+            if (rec?.removedId) { try { source.disconnect(rec.removedId); } catch (_) {} }
             this._sourceConns.delete(source);
+            this._historyChanged();
         });
-        this._sourceConns.set(source, {addedId, destroyId});
+        this._sourceConns.set(source, {addedId, removedId, destroyId});
     }
 
     _onNotif(source, notif) {
         this.emit('peek', source, notif);
+        this._historyChanged();
 
         const ttl = this._settings.get_int('notif-auto-dismiss');
         if (ttl <= 0) return;

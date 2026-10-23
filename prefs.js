@@ -33,7 +33,7 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         modGroup.add(this._boolRow(settings, 'show-notifications', 'Dynamic notification peek'));
         modGroup.add(this._boolRow(settings, 'show-calendar',      'Google Calendar'));
         modGroup.add(this._boolRow(settings, 'show-tasks',         'Google Tasks'));
-        modGroup.add(this._boolRow(settings, 'show-claude-usage',  'Claude Code usage'));
+        modGroup.add(this._boolRow(settings, 'show-claude-usage',  'Antigravity usage'));
         page.add(modGroup);
 
         const perfGroup = new Adw.PreferencesGroup({title: 'Performance'});
@@ -143,12 +143,12 @@ export default class NexNotchPrefs extends ExtensionPreferences {
     }
 
     _claudePage(settings) {
-        const page = new Adw.PreferencesPage({title: 'Claude', icon_name: 'preferences-system-symbolic'});
+        const page = new Adw.PreferencesPage({title: 'Antigravity', icon_name: 'preferences-system-symbolic'});
         const group = new Adw.PreferencesGroup({
-            title: 'Claude Code usage',
-            description: 'Reads the local Claude Code CLI session (the same login `claude` already uses) and shows session/weekly quota utilization. Requires having run `claude` at least once to sign in.',
+            title: 'Antigravity usage',
+            description: 'Reads the Antigravity CLI login from the GNOME keyring (the same one `agy` uses) and shows how much of each model quota is left. The login expires hourly; open `agy` to refresh it.',
         });
-        group.add(this._boolRow(settings, 'show-claude-usage', 'Show Claude usage tab'));
+        group.add(this._boolRow(settings, 'show-claude-usage', 'Show Antigravity usage tab'));
         group.add(this._intRow(settings, 'claude-usage-refresh', 'Refresh interval (min)', 5, 120, 5));
         page.add(group);
         return page;

@@ -12,7 +12,6 @@
     border-radius: 0 0 20px 20px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-top: 0;
-    box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.45);
 }
 
 /* ——— collapsed pill ——— */
@@ -645,7 +644,6 @@
     spacing: 12px;
     background-color: rgb(0, 0, 0);
     border-radius: 0 0 20px 20px;
-    box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.55);
 }
 
 .nexnotch-peek-icon-bin {
@@ -745,3 +743,178 @@
     border: 0;
 }
 .nexnotch-claude-refresh-btn:hover { background-color: rgba(255, 255, 255, 0.14); color: white; }
+
+/* ——— quick: mirrored GNOME quick settings ——— */
+
+.nexnotch-quick-sliders { spacing: 10px; padding: 2px 6px 4px; }
+.nexnotch-quick-slider-row { spacing: 12px; }
+.nexnotch-quick-slider-icon { icon-size: 16px; color: rgba(255, 255, 255, 0.8); }
+
+.nexnotch-quick-toggles { spacing: 10px; padding: 6px 0 8px; }
+.nexnotch-quick-toggle {
+    width: 44px;
+    height: 44px;
+    border-radius: 22px;
+    background-color: rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.85);
+}
+.nexnotch-quick-toggle:hover { background-color: rgba(255, 255, 255, 0.18); }
+.nexnotch-quick-toggle:checked { background-color: -st-accent-color; color: -st-accent-fg-color; }
+.nexnotch-quick-toggle:checked:hover { background-color: st-lighten(-st-accent-color, 8%); }
+.nexnotch-quick-toggle-icon { icon-size: 18px; }
+
+/* power row: same round shape as the toggles, a little smaller */
+.nexnotch-quick-actions { spacing: 10px; padding: 4px 0 2px; }
+.nexnotch-quick-power { width: 38px; height: 38px; border-radius: 19px; }
+.nexnotch-quick-power.armed,
+.nexnotch-quick-power.armed:hover { background-color: rgba(230, 70, 60, 0.95); color: white; }
+.nexnotch-quick-pill.low .nexnotch-quick-pill-value { color: rgba(255, 110, 90, 0.95); }
+
+/* collapsed pill: equal side columns keep the clock dead centre */
+.nexnotch-left, .nexnotch-right { min-width: 72px; }
+
+/* ——— music: collapsed pill caps (ellipsized in code) ——— */
+.nexnotch-music-title  { max-width: 170px; }
+.nexnotch-music-artist { max-width: 120px; }
+.nexnotch-media-icon   { padding-right: 6px; }
+
+/* ——— music tab card ——— */
+.nexnotch-media-card {
+    border-radius: 16px;
+    background-color: rgb(38, 38, 46);
+    background-size: cover;
+    background-position: center;
+    min-height: 196px;
+}
+.nexnotch-media-shade {
+    border-radius: 16px;
+    background-color: rgba(0, 0, 0, 0.55);
+    padding: 12px 18px 10px;
+    spacing: 4px;
+}
+.nexnotch-media-top { spacing: 8px; }
+.nexnotch-media-app { color: rgba(255, 255, 255, 0.85); font-size: 11px; font-weight: 600; padding: 0; }
+.nexnotch-media-app:hover { color: white; }
+.nexnotch-media-output {
+    background-color: rgba(0, 0, 0, 0.45);
+    color: white;
+    font-size: 11px; font-weight: 600;
+    border-radius: 999px;
+    padding: 4px 12px;
+}
+.nexnotch-media-output:hover { background-color: rgba(255, 255, 255, 0.18); }
+.nexnotch-media-title  { color: white; font-size: 17px; font-weight: 700; padding-top: 8px; }
+.nexnotch-media-artist { color: rgba(255, 255, 255, 0.75); font-size: 12px; }
+.nexnotch-media-slider {
+    height: 18px;
+    margin-top: 8px;
+    -barlevel-height: 4px;
+    -barlevel-background-color: rgba(255, 255, 255, 0.25);
+    -barlevel-active-background-color: rgba(255, 255, 255, 0.95);
+    -slider-handle-radius: 6px;
+    color: white;
+}
+.nexnotch-media-times { color: rgba(255, 255, 255, 0.7); font-size: 10px; font-feature-settings: "tnum"; }
+.nexnotch-media-ctrls { spacing: 24px; padding-top: 2px; }
+.nexnotch-media-btn { width: 36px; height: 36px; border-radius: 18px; color: white; }
+.nexnotch-media-btn StIcon { icon-size: 18px; }
+.nexnotch-media-btn:hover { background-color: rgba(255, 255, 255, 0.15); }
+.nexnotch-media-btn.big { width: 44px; height: 44px; border-radius: 22px; background-color: rgba(255, 255, 255, 0.18); }
+.nexnotch-media-btn.big StIcon { icon-size: 22px; }
+.nexnotch-media-btn.disabled { color: rgba(255, 255, 255, 0.3); }
+
+/* ——— music: now-playing peek ——— */
+.nexnotch-media-peek { padding: 10px 16px 10px 12px; spacing: 12px; }
+.nexnotch-media-peek-art {
+    width: 46px; height: 46px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.08);
+    background-size: cover;
+}
+.nexnotch-media-peek-caption { color: rgba(255, 255, 255, 0.55); font-size: 10px; font-weight: 600; }
+.nexnotch-media-peek-title   { color: white; font-size: 13px; font-weight: 700; }
+.nexnotch-media-peek-artist  { color: rgba(255, 255, 255, 0.7); font-size: 11px; }
+
+/* ——— music v2: cover, wave, tighter collapsed caps ——— */
+.nexnotch-music-title  { max-width: 140px; }
+.nexnotch-music-artist { max-width: 100px; }
+.nexnotch-media-track { spacing: 12px; padding-top: 8px; }
+.nexnotch-media-track .nexnotch-media-title { padding-top: 0; }
+.nexnotch-media-cover {
+    width: 56px; height: 56px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.08);
+    background-size: cover;
+    background-position: center;
+}
+.nexnotch-wave { height: 22px; margin-top: 10px; }
+
+/* ——— main tab: notification history ——— */
+.nexnotch-main { spacing: 12px; }
+.nexnotch-hist { spacing: 6px; }
+.nexnotch-hist-header { padding: 0 4px; }
+.nexnotch-hist-heading { color: rgba(255, 255, 255, 0.55); font-size: 11px; font-weight: 700; letter-spacing: 0.4px; }
+.nexnotch-hist-clear {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.nexnotch-hist-clear:hover { background-color: rgba(255, 255, 255, 0.16); color: white; }
+.nexnotch-hist-empty { color: rgba(255, 255, 255, 0.4); font-size: 11px; padding: 10px 0; }
+.nexnotch-hist-scroll { max-height: 230px; }
+.nexnotch-hist-list { spacing: 6px; }
+.nexnotch-hist-row {
+    spacing: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.nexnotch-hist-row:hover { background-color: rgba(255, 255, 255, 0.11); }
+.nexnotch-hist-app   { color: rgba(255, 255, 255, 0.55); font-size: 10px; font-weight: 600; }
+.nexnotch-hist-time  { color: rgba(255, 255, 255, 0.4); font-size: 10px; font-feature-settings: "tnum"; padding-left: 8px; }
+.nexnotch-hist-title { color: white; font-size: 12px; font-weight: 700; }
+.nexnotch-hist-body  { color: rgba(255, 255, 255, 0.72); font-size: 11px; }
+.nexnotch-hist-delete {
+    width: 22px; height: 22px;
+    border-radius: 11px;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 10px;
+}
+.nexnotch-hist-delete:hover { background-color: rgba(255, 255, 255, 0.16); color: white; }
+
+/* ——— quick: submenu openers ——— */
+.nexnotch-quick-badge {
+    width: 16px; height: 16px;
+    border-radius: 8px;
+    background-color: rgb(58, 58, 64);
+    color: white;
+    border: 2px solid rgb(0, 0, 0);
+}
+.nexnotch-quick-badge:hover { background-color: rgb(90, 90, 98); }
+.nexnotch-quick-badge-icon { icon-size: 10px; }
+.nexnotch-quick-slider-more {
+    width: 26px; height: 26px;
+    border-radius: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+.nexnotch-quick-slider-more:hover { background-color: rgba(255, 255, 255, 0.14); color: white; }
+.nexnotch-quick-slider-more-icon { icon-size: 12px; }
+
+/* ——— music: lyrics ——— */
+.nexnotch-media-output:checked { background-color: rgba(255, 255, 255, 0.9); color: black; }
+.nexnotch-lyrics {
+    spacing: 4px;
+    padding: 10px 6px 4px;
+    min-height: 84px;   /* room for a two-line current line without the card jumping */
+}
+.nexnotch-lyrics-line    { color: rgba(255, 255, 255, 0.45); font-size: 12px; }
+.nexnotch-lyrics-current { color: white; font-size: 15px; font-weight: 700; }
+
+/* ——— charger peek ——— */
+.nexnotch-power-peek-icon {
+    width: 46px; height: 46px;
+    border-radius: 23px;
+    background-color: rgba(255, 255, 255, 0.08);
+}

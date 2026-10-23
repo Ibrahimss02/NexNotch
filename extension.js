@@ -39,18 +39,72 @@ export default class NexNotchExtension extends Extension {
            actor tree. This keeps any Shell.BlurEffect that blur-my-shell
            attaches to the panel from bleeding through the notch. */
         Main.layoutManager.addTopChrome(this._notch, {
-            trackFullscreen: true,
+            /* Not trackFullscreen: with the top bar hidden, a maximized
+               self-decorated window (Firefox) covers the whole monitor and
+               GNOME's legacy heuristic calls that "fullscreen", hiding the
+               notch. _syncFullscreen only reacts to real fullscreen. */
+            trackFullscreen: false,
             affectsStruts: false,
-            affectsInputRegion: true,
+            // GNOME 50 dropped affectsInputRegion; chrome always takes input now
         });
+        this._fullscreenSync = () => this._syncFullscreen();
+        global.display.connectObject(
+            'in-fullscreen-changed', this._fullscreenSync,
+            'notify::focus-window', this._fullscreenSync, this);
+        Main.overview.connectObject(
+            'showing', this._fullscreenSync,
+            'hidden', this._fullscreenSync, this);
 
         this._reposition = () => this._positionNotch();
         this._monitorsChangedId = Main.layoutManager.connect('monitors-changed', this._reposition);
         this._panelAllocId = Main.panel.connect('notify::allocation', this._reposition);
         this._notchAllocId = this._notch.connect('notify::allocation', this._reposition);
         this._positionNotch();
+        this._syncFullscreen();
+
+        /* Notch-only top, toggled live by `hide-top-bar`. The panel keeps its
+           Quick Settings items alive for the notch's Quick tab to mirror. */
+        this._topBarSigId = this._settings.connect('changed::hide-top-bar', () => this._syncTopBar());
+        this._panelHeightId = Main.layoutManager.panelBox.connect('notify::height', () => this._syncTopBar());
+        this._syncTopBar();
 
         this._notch.start();
+    }
+
+    /* Hide the notch only while the focused window on the primary monitor
+       is truly fullscreen (video, F11); always show it in the overview. */
+    _syncFullscreen() {
+        if (!this._notch) return;
+        const w = global.display.focus_window;
+        const fullscreen = !Main.overview.visible && !!w?.is_fullscreen() &&
+            w.get_monitor() === Main.layoutManager.primaryIndex;
+        this._notch.visible = !fullscreen;
+    }
+
+    /* Same approach as the Hide Top Bar extension: keep the panel at its
+       normal size (a 0px-tall panel left a 0px top strut that broke window
+       drawing), stop it reserving screen space, and slide it off-screen. */
+    _syncTopBar() {
+        const box = Main.layoutManager.panelBox;
+        const hidden = !!this._settings?.get_boolean('hide-top-bar');
+        if (hidden !== !!this._topBarHidden) {
+            this._topBarHidden = hidden;
+            Main.layoutManager._untrackActor(box);
+            Main.layoutManager._trackActor(box, {affectsStruts: !hidden, trackFullscreen: true});
+        }
+        box.translation_y = hidden ? -box.height : 0;
+    }
+
+    _restoreTopBar() {
+        if (this._topBarSigId) { this._settings.disconnect(this._topBarSigId); this._topBarSigId = 0; }
+        if (this._panelHeightId) { Main.layoutManager.panelBox.disconnect(this._panelHeightId); this._panelHeightId = 0; }
+        if (this._topBarHidden) {
+            const box = Main.layoutManager.panelBox;
+            Main.layoutManager._untrackActor(box);
+            Main.layoutManager._trackActor(box, {affectsStruts: true, trackFullscreen: true});
+            box.translation_y = 0;
+            this._topBarHidden = false;
+        }
     }
 
     _positionNotch() {
@@ -66,6 +120,7 @@ export default class NexNotchExtension extends Extension {
     }
 
     disable() {
+        this._restoreTopBar();
         if (this._monitorsChangedId) {
             Main.layoutManager.disconnect(this._monitorsChangedId);
             this._monitorsChangedId = 0;
@@ -78,6 +133,8 @@ export default class NexNotchExtension extends Extension {
             try { this._notch?.disconnect(this._notchAllocId); } catch (_) {}
             this._notchAllocId = 0;
         }
+        global.display.disconnectObject(this);
+        Main.overview.disconnectObject(this);
         if (this._notch) {
             this._notch.stop();
             try { Main.layoutManager.removeChrome(this._notch); } catch (_) {}

@@ -6,6 +6,7 @@
     <!-- modules -->
     <key name="show-system"        type="b"><default>true</default><summary>Show system monitor in expanded view</summary></key>
     <key name="show-notifications" type="b"><default>true</default><summary>Enable dynamic notification peek</summary></key>
+    <key name="hide-top-bar"       type="b"><default>false</default><summary>Hide the GNOME top bar so only the notch remains</summary></key>
     <key name="show-calendar"      type="b"><default>true</default><summary>Enable Google Calendar peek</summary></key>
     <key name="show-tasks"         type="b"><default>true</default><summary>Enable Google Tasks peek</summary></key>
     <key name="show-claude-usage"  type="b"><default>true</default><summary>Show Claude Code usage/limit tab</summary></key>
