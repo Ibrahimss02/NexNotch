@@ -78,6 +78,10 @@ class Waveform extends St.BoxLayout {
         this.setPlaying(false);
     }
 
+    setColor(hex) {
+        this._bars.forEach(bar => bar.set_style(`background-color: ${hex};`));
+    }
+
     setPlaying(on) {
         if (on) {
             this._timeline.start();

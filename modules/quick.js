@@ -22,6 +22,7 @@ export const QuickHub = GObject.registerClass({
     Signals: {
         'updated': {},
         'show-submenu': {},
+        'submenu-closed': {},   // by the user: back button or an item picked
     },
 }, class QuickHub extends GObject.Object {
     _init(settings) {
@@ -295,7 +296,7 @@ export const QuickHub = GObject.registerClass({
         menu.isOpen = true;
         menu.emit('open-state-changed', true);
         const closedId = menu.connect('open-state-changed', (_m, open) => {
-            if (!open) { this.closeSubmenu(); this.emit('updated'); }
+            if (!open) { this.closeSubmenu(); this.emit('updated'); this.emit('submenu-closed'); }
         });
         this._submenu = {item, closedId};
         this.emit('show-submenu');
@@ -320,7 +321,7 @@ export const QuickHub = GObject.registerClass({
             x_align: Clutter.ActorAlign.START,
             child: new St.Icon({icon_name: 'go-previous-symbolic', style_class: 'nexnotch-quick-back-icon'}),
         });
-        back.connect('clicked', () => { this.closeSubmenu(); this.emit('updated'); });
+        back.connect('clicked', () => { this.closeSubmenu(); this.emit('updated'); this.emit('submenu-closed'); });
         view.add_child(back);
         const holder = new St.Bin({x_expand: true});
         box.get_parent()?.remove_child(box);

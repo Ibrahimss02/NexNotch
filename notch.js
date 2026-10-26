@@ -41,6 +41,7 @@ const OSD_MS            = 1500;  // same as GNOME's own OSD
 const OSD_SIZE          = [270, 32];
 const POWER_PEEK_MS     = 3000;
 const SHELF_PEEK_MS     = 2200;
+const DEFAULT_ACCENT    = '#1DB954';   // Spotify green, when there's no cover to take a colour from
 const SLIDE_PX          = 48;    // how far tab content slides on a switch
 const PAGE_PX           = 220;   // drag distance per tab; past half of it the tab flips
 const FLICK_MS          = 180;   // how far ahead a flick's speed is projected
@@ -120,7 +121,18 @@ class Notch extends St.Widget {
         this._modules.pomodoro.connect('state',             ()          => { if (this._expanded && this._activeTab === 'pomodoro') this._renderTab(); this._updatePomodoroIndicator(); });
         this._modules.quick.connect('updated',              ()          => { if (this._expanded && this._activeTab === 'quick') this._renderTab(); this._updatePrivacyIndicator(); });
         this._modules.claude.connect('updated',              ()          => { if (this._expanded && this._activeTab === 'claude') this._renderTab(); });
-        this._modules.quick.connect('show-submenu',         ()          => this._activeTab === 'quick' ? this._renderTab() : this._goToTab('quick'));
+        /* a list opened from another tab (the player's Output) visits Quick
+           without becoming the last tab, and goes back when it closes */
+        this._modules.quick.connect('show-submenu', () => {
+            if (this._activeTab === 'quick') { this._renderTab(); return; }
+            this._submenuReturn = this._activeTab;
+            this._goToTab('quick');
+        });
+        this._modules.quick.connect('submenu-closed', () => {
+            const back = this._submenuReturn;
+            this._submenuReturn = null;
+            if (back && this._expanded) this._goToTab(back);
+        });
         this._modules.power.connect('charger-changed',      (_, info)   => this._peekCharger(info));
         /* the countdown only shows whole minutes: refresh when that changes */
         this._modules.water.connect('level', (_, level) => {
@@ -645,6 +657,10 @@ class Notch extends St.Widget {
 
     _collapse() {
         if (this._passThrough) this._setPassThrough(false);
+        if (this._submenuReturn) {   // closed mid-visit: reopen where you were
+            this._activeTab = this._submenuReturn;
+            this._submenuReturn = null;
+        }
         this._shelfDrop = null;
         this._modules?.notes?._releaseGrab?.();
         this._expanded = false;
@@ -671,7 +687,7 @@ class Notch extends St.Widget {
             this._modules?.notes?._releaseGrab?.();
         }
         this._activeTab = id;
-        if (this._settings.get_string('last-tab') !== id) this._settings.set_string('last-tab', id);
+        if (!this._submenuReturn && this._settings.get_string('last-tab') !== id) this._settings.set_string('last-tab', id);
         /* Bump system poll to user-selected fast rate only when user is
            actually looking at the system tab, otherwise fall back to 3x */
         this._modules?.system?.setFocused?.(this._expanded && id === 'system');
@@ -897,6 +913,16 @@ class Notch extends St.Widget {
             this._lastTrackKey = key;
         }
         /* the pill shows a live waveform while something plays */
+        if (info?.artUrl !== this._accentUrl) {
+            this._accentUrl = info?.artUrl;
+            this._accent = DEFAULT_ACCENT;
+            this._wave.setColor(DEFAULT_ACCENT);
+            this._loadArt(info?.artUrl, path => {
+                if (this._accentUrl !== info.artUrl) return;
+                this._accent = this._coverColors(path)?.accent ?? DEFAULT_ACCENT;
+                this._wave.setColor(this._accent);
+            });
+        }
         const show = !!(info?.playing || info?.paused) && this._settings.get_boolean('show-media-pill');
         const changed = show !== this._wave.visible;
         this._wave.visible = show;
@@ -925,7 +951,11 @@ class Notch extends St.Widget {
         const info = this._latestMedia;
         if (!info || (!info.playing && !info.paused)) return null;
         const mpris = this._modules.mpris;
-        const card = new St.BoxLayout({style_class: 'nexnotch-player', vertical: true, x_expand: true});
+        /* the blurred cover fills the card; a shade on top keeps text readable */
+        const outer = new St.Widget({style_class: 'nexnotch-player', layout_manager: new Clutter.BinLayout(), x_expand: true});
+        const card = new St.BoxLayout({style_class: 'nexnotch-player-shade', vertical: true, x_expand: true, y_expand: true});
+        outer.add_child(card);
+        const accentActors = [];   // tinted with the cover's colour once it loads
 
         const top = new St.BoxLayout({style_class: 'nexnotch-player-top'});
         const art = new St.Bin({style_class: 'nexnotch-player-art', y_align: Clutter.ActorAlign.CENTER});
@@ -992,6 +1022,7 @@ class Notch extends St.Widget {
                 accessible_name: name, can_focus: true, reactive: enabled, y_align: Clutter.ActorAlign.CENTER});
             if (!enabled) b.add_style_class_name('disabled');
             if (active) b.add_style_pseudo_class('checked');
+            if (enabled && (active || cls.includes('accent'))) accentActors.push(b);
             if (enabled) b.connect('clicked', cb);
             return b;
         };
@@ -1027,12 +1058,19 @@ class Notch extends St.Widget {
             card.add_child(lyr.box);
             syncLyrics = lyr.sync;
         }
+        const tint = accent => {
+            wave.setColor(accent);
+            accentActors.forEach(a => a.set_style(`color: ${accent};`));
+        };
+        tint(this._accent ?? DEFAULT_ACCENT);
         this._loadArt(info.artUrl, path => {
             if (!alive) return;
             art.set_style(`background-image: url("file://${path}");`);
             art.child?.hide();
-            const tint = this._artTint(path);
-            if (tint) card.set_style(`background-color: ${tint};`);
+            const colors = this._coverColors(path);
+            if (!colors) return;
+            outer.set_style(`background-image: url("file://${colors.blur}");`);
+            tint(colors.accent);
         });
 
         /* position is polled each second and advanced locally in between */
@@ -1049,22 +1087,66 @@ class Notch extends St.Widget {
             else if (!dragging) show(current());
             return GLib.SOURCE_CONTINUE;
         });
-        card.connect('destroy', () => {
+        outer.connect('destroy', () => {
             alive = false;
             GLib.source_remove(timer);
             if (dragging) this._seeking = false;
-            if (this._musicCard === card) this._musicCard = null;
+            if (this._musicCard === outer) this._musicCard = null;
         });
-        return card;
+        return outer;
     }
 
-    /* the cover's average colour, darkened, as the card's background */
-    _artTint(path) {
+    /* From the cover: a heavily blurred copy for the card background (shrunk
+       to 24 px and scaled back up, cached beside the art) and a vibrant accent
+       colour lifted to a readable brightness. Cached per cover. */
+    _coverColors(path) {
+        this._coverCache ??= new Map();
+        if (this._coverCache.has(path)) return this._coverCache.get(path);
+        let result = null;
         try {
-            const px = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 1, 1, false).get_pixels();
-            const dark = c => Math.round(c * 0.3 + 14);
-            return `rgb(${dark(px[0])}, ${dark(px[1])}, ${dark(px[2])})`;
-        } catch (_) { return null; }
+            const small = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, 24, 24, false);
+            const dir = GLib.build_filenamev([GLib.get_user_cache_dir(), 'nexnotch', 'art']);
+            GLib.mkdir_with_parents(dir, 0o755);
+            const blur = GLib.build_filenamev([dir, `${GLib.compute_checksum_for_string(GLib.ChecksumType.MD5, path, -1)}-bg.png`]);
+            if (!GLib.file_test(blur, GLib.FileTest.EXISTS)) {
+                /* whole cover squeezed to the card's 3:1, upscaled in doublings for a smooth blur */
+                let pb = small.scale_simple(12, 12, GdkPixbuf.InterpType.BILINEAR), w = 12, h = 12;
+                while (w < 576 || h < 192) {
+                    w = Math.min(576, w * 2); h = Math.min(192, h * 2);
+                    pb = pb.scale_simple(w, h, GdkPixbuf.InterpType.BILINEAR);
+                }
+                pb.savev(blur, 'png', [], []);
+            }
+            const px = small.get_pixels(), stride = small.get_rowstride(), n = small.get_n_channels();
+            let best = null, bestScore = -1;
+            for (let y = 0; y < small.get_height(); y++) {
+                for (let x = 0; x < small.get_width(); x++) {
+                    const i = y * stride + x * n;
+                    const [r, g, b] = [px[i] / 255, px[i + 1] / 255, px[i + 2] / 255];
+                    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                    const sat = max ? (max - min) / max : 0;
+                    const score = sat * max * (max > 0.15 ? 1 : 0);
+                    if (score > bestScore) { bestScore = score; best = [r, g, b]; }
+                }
+            }
+            result = {blur, accent: bestScore > 0.12 ? this._readable(best) : DEFAULT_ACCENT};
+        } catch (e) { logError(e, 'nexnotch:cover'); }
+        this._coverCache.set(path, result);
+        return result;
+    }
+
+    /* keep the hue, force enough saturation and lightness to read on dark */
+    _readable([r, g, b]) {
+        const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+        let h = 0;
+        if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        h = (h * 60 + 360) % 360;
+        const l = Math.min(0.72, Math.max(0.6, (max + min) / 2));
+        const sl = Math.max(0.6, d / (1 - Math.abs(max + min - 1) || 1));
+        const c = (1 - Math.abs(2 * l - 1)) * Math.min(1, sl), xx = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2;
+        const [r1, g1, b1] = h < 60 ? [c, xx, 0] : h < 120 ? [xx, c, 0] : h < 180 ? [0, c, xx] : h < 240 ? [0, xx, c] : h < 300 ? [xx, 0, c] : [c, 0, xx];
+        const hex = v => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+        return `#${hex(r1)}${hex(g1)}${hex(b1)}`;
     }
 
     /* previous / current / next lyric line; sync(us) follows the wave position */
@@ -1218,6 +1300,7 @@ class Notch extends St.Widget {
         const art = new St.Bin({style_class: 'nexnotch-peek-art', y_align: Clutter.ActorAlign.CENTER});
         art.set_child(new St.Icon({icon_name: this._resolveMediaIcon(info.icon) ?? 'audio-x-generic-symbolic', icon_size: 22}));
         const wave = new Waveform(5, 'nexnotch-wave large');
+        wave.setColor(this._accent ?? DEFAULT_ACCENT);
         wave.setPlaying(true);
         const peek = this._showPeek(this._peekCard(art, [
             ['Now Playing', 'nexnotch-peek-caption'],
@@ -1228,6 +1311,7 @@ class Notch extends St.Widget {
             if (!peek || this._peekLayer !== peek) return;
             art.set_style(`background-image: url("file://${path}");`);
             art.child?.hide();
+            wave.setColor(this._coverColors(path)?.accent ?? DEFAULT_ACCENT);
         });
     }
 

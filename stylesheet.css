@@ -901,7 +901,7 @@
 .nexnotch-pomo-chip.break .nexnotch-pomo-mini, .nexnotch-pomo-chip.break .nexnotch-pomo-chip-icon { color: #30D158; }
 .nexnotch-pomo-chip.paused .nexnotch-pomo-mini, .nexnotch-pomo-chip.paused .nexnotch-pomo-chip-icon { color: #A1A1A6; }
 .nexnotch-wave { spacing: 3px; height: 14px; padding-left: 9px; }
-.nexnotch-wave-bar { width: 3px; border-radius: 1.8px; background-color: #FF8FB1; }
+.nexnotch-wave-bar { width: 3px; border-radius: 1.8px; background-color: #1DB954; }
 .nexnotch-wave.large { height: 20px; padding-left: 0; }
 .nexnotch-wave.large .nexnotch-wave-bar { width: 4px; }
 
@@ -978,7 +978,8 @@
 .nexnotch-caps { color: #A1A1A6; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
 
 /* Notifs: player + history */
-.nexnotch-player { background-color: #3B2430; border-radius: 27px; padding: 14px 16px 11px; spacing: 11px; }
+.nexnotch-player { background-color: #26262A; border-radius: 27px; background-size: cover; background-position: center; }
+.nexnotch-player-shade { background-color: rgba(0, 0, 0, 0.42); border-radius: 27px; padding: 14px 16px 11px; spacing: 11px; }
 .nexnotch-player-top { spacing: 13px; }
 .nexnotch-player-art {
     width: 65px; height: 65px; border-radius: 14px;
@@ -1009,12 +1010,12 @@
 .nexnotch-player-btn { width: 40px; height: 40px; border-radius: 20px; color: #A1A1A6; }
 .nexnotch-player-btn StIcon { icon-size: 16px; }
 .nexnotch-player-btn:hover { background-color: rgba(255, 255, 255, 0.10); }
-.nexnotch-player-btn:checked { color: #FF8FB1; }
+.nexnotch-player-btn:checked { color: #1DB954; }
 .nexnotch-player-btn.main { color: white; }
 .nexnotch-player-btn.main StIcon { icon-size: 22px; }
 .nexnotch-player-btn.big { width: 47px; height: 47px; border-radius: 23px; }
 .nexnotch-player-btn.big StIcon { icon-size: 25px; }
-.nexnotch-player-btn.accent { color: #FF8FB1; }
+.nexnotch-player-btn.accent { color: #1DB954; }
 .nexnotch-player-btn.disabled { color: #48484A; }
 .nexnotch-lyrics-line { color: rgba(255, 255, 255, 0.45); font-size: 11px; }
 .nexnotch-lyrics-current { color: white; font-size: 14px; font-weight: 700; }
