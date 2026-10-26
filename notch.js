@@ -5,7 +5,6 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import Pango from 'gi://Pango';
 import Soup from 'gi://Soup?version=3.0';
-import Graphene from 'gi://Graphene';
 import GdkPixbuf from 'gi://GdkPixbuf';
 
 import Meta from 'gi://Meta';
@@ -176,7 +175,7 @@ class Notch extends St.Widget {
         if (this._expanded || this._peekActive) return;
         const target = this._measureCollapsedWidth();
         if (animate) {
-            this.remove_all_transitions();
+            this._stopSizeAnim();
             this.ease({
                 width: target, height: this._ch,
                 duration: 180, mode: Clutter.AnimationMode.EASE_OUT_EXPO,
@@ -199,9 +198,14 @@ class Notch extends St.Widget {
     }
 
     _bgStyleFor(radius) {
+        /* the lyric pill fades from the notch colour into the cover's */
+        const gradient = this._lyricTint && !this._expanded
+            ? `background-gradient-direction: vertical; background-gradient-start: ${this._bgColor}; background-gradient-end: ${this._lyricTint};`
+            : '';
         return `
             background-color: ${this._bgColor};
             border-radius: 0 0 ${radius}px ${radius}px;
+            ${gradient}
         `;
     }
 
@@ -221,15 +225,36 @@ class Notch extends St.Widget {
         this._setRadius(r);
     }
 
-    /* ease() has no spring mode; a cubic-bezier that overshoots a little
-       lets the notch settle softly instead of stopping dead. */
-    _springEase(props, duration, overshoot = 1.12, onComplete = undefined) {
-        this._targetH = props.height;
-        this.ease({...props, duration, mode: Clutter.AnimationMode.EASE_OUT_QUINT, onComplete});
-        for (const name of Object.keys(props)) {
-            this.get_transition(name)?.set_cubic_bezier_progress(
-                new Graphene.Point({x: 0.3, y: overshoot}), new Graphene.Point({x: 0.45, y: 1}));
-        }
+    /* ease() has no spring mode (and a progress func can't be set from
+       GJS), so a timeline drives a damped spring: past the target, back,
+       settled. Lower damping bounces more; the stiffness is picked so the
+       spring has settled by `duration`. */
+    _springEase({width, height}, duration, damping = 0.6, onComplete = undefined) {
+        this._stopSizeAnim();
+        this._targetH = height;
+        const [w0, h0] = [this.width, this.height];
+        const omega = 5.3 / (damping * duration / 1000);
+        const omegaD = omega * Math.sqrt(1 - damping * damping);
+        const timeline = new Clutter.Timeline({actor: this, duration});
+        timeline.connect('new-frame', (_tl, elapsed) => {
+            const t = elapsed / 1000;
+            const p = 1 - Math.exp(-damping * omega * t) *
+                (Math.cos(omegaD * t) + damping * omega / omegaD * Math.sin(omegaD * t));
+            this.set_size(w0 + (width - w0) * p, Math.max(1, h0 + (height - h0) * p));
+        });
+        timeline.connect('completed', () => {
+            this._springTl = null;
+            this.set_size(width, height);
+            onComplete?.();
+        });
+        this._springTl = timeline;
+        timeline.start();
+    }
+
+    _stopSizeAnim() {
+        this.remove_all_transitions();
+        this._springTl?.stop();
+        this._springTl = null;
     }
 
     _hideDateMenuIfRequested() {
@@ -257,7 +282,7 @@ class Notch extends St.Widget {
             if (!this._expanded && !this._peekActive) this._resizeCollapsed(false);
             this._collapsed.height = this._ch;
             this._expandedLayer.width = this._ew;
-            if (this._expanded) this.set_size(this._ew, this._expandedHeight());
+            if (this._expanded) { this._stopSizeAnim(); this.set_size(this._ew, this._expandedHeight()); }
             this._applyColors();
         }
         if (['bg-color', 'accent-color', 'corner-radius',
@@ -266,6 +291,7 @@ class Notch extends St.Widget {
         }
         if (key === 'hide-datemenu') this._hideDateMenuIfRequested();
         if (key === 'show-media-pill') this._updateMedia(this._latestMedia);
+        if (key === 'lyrics-enabled') this._syncLyricPill();
         if (key === 'clock-format' || key === 'show-seconds' || key === 'show-date') {
             this._updateClocks();
             this._resizeCollapsed();
@@ -374,6 +400,14 @@ class Notch extends St.Widget {
         this._collapsed.add_child(this._recBox);
         this._collapsed.add_child(this._shareBox);
 
+        /* lyrics on: the line being sung replaces the pill's contents */
+        this._lyricBox = new St.BoxLayout({style_class: 'nexnotch-lyric-pill', x_expand: true, visible: false});
+        this._lyricBox.add_child(new St.Icon({gicon: ownIcon('note'), style_class: 'nexnotch-lyric-note', y_align: Clutter.ActorAlign.CENTER}));
+        this._lyricLabel = new St.Label({style_class: 'nexnotch-lyric-text', y_align: Clutter.ActorAlign.CENTER});
+        this._lyricLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        this._lyricBox.add_child(this._lyricLabel);
+        this._collapsed.add_child(this._lyricBox);
+
         /* expanded layer */
         this._expandedLayer = new St.BoxLayout({
             style_class: 'nexnotch-expanded',
@@ -478,18 +512,108 @@ class Notch extends St.Widget {
             return;
         }
         this._captureMode = mode;
-        for (const c of [this._leftCluster, this._centerCluster, this._rightCluster]) c.visible = !mode;
-        this._recBox.visible = mode === 'rec';
-        this._shareBox.visible = mode === 'share';
-        if (mode) this._collapsed.add_style_class_name('capture');
-        else this._collapsed.remove_style_class_name('capture');
         this._recDot.remove_all_transitions();
         this._recDot.opacity = 255;
         if (mode === 'rec') {
             this._recDot.ease({opacity: 90, duration: 600, mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
                 repeatCount: -1, autoReverse: true});
         }
+        this._applyPillMode();
+    }
+
+    /* what the collapsed pill shows: recording/sharing, else lyrics, else
+       battery · clock · date */
+    _applyPillMode() {
+        const mode = this._captureMode ?? (this._lyricLines?.length ? 'lyric' : null);
+        for (const c of [this._leftCluster, this._centerCluster, this._rightCluster]) c.visible = !mode;
+        this._recBox.visible = mode === 'rec';
+        this._shareBox.visible = mode === 'share';
+        this._lyricBox.visible = mode === 'lyric';
+        if (mode === 'rec' || mode === 'share') this._collapsed.add_style_class_name('capture');
+        else this._collapsed.remove_style_class_name('capture');
+        const tint = mode === 'lyric' ? this._shade(this._accent ?? DEFAULT_ACCENT, 0.5) : null;
+        if (tint !== this._lyricTint) {
+            this._lyricTint = tint;
+            this._syncRadius(true);
+        }
         this._resizeCollapsed();
+    }
+
+    /* Lyrics on and a track playing: fetch its synced lines and follow the
+       playback position. No synced lyrics means the normal pill. */
+    _syncLyricPill() {
+        const info = this._latestMedia;
+        const on = this._settings.get_boolean('lyrics-enabled') && this._settings.get_boolean('show-media-pill') &&
+            !!info?.playing && !!info.title;
+        const key = on ? `${info.artist}|${info.title}|${info.album}` : null;
+        if (key !== this._lyricKey) {
+            this._lyricKey = key;
+            this._lyricLines = null;
+            this._lyricShown = -2;
+            if (key) {
+                this._lyrics ??= new Lyrics();
+                this._lyrics.get(info).then(result => {
+                    if (this._lyricKey !== key) return;
+                    this._lyricLines = result?.synced ?? null;
+                    this._pollLyricPosition();
+                    this._applyPillMode();
+                });
+            }
+        }
+        if (key && !this._lyricTimer) {
+            let ticks = 0;
+            this._lyricTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 250, () => {
+                if (++ticks % 4 === 0) this._pollLyricPosition();
+                else this._tickLyric();
+                return GLib.SOURCE_CONTINUE;
+            });
+            this._pollLyricPosition();
+        } else if (!key && this._lyricTimer) {
+            GLib.source_remove(this._lyricTimer);
+            this._lyricTimer = 0;
+        }
+        this._applyPillMode();
+    }
+
+    _pollLyricPosition() {
+        this._modules.mpris.position(us => {
+            this._lyricPos = us;
+            this._lyricPosAt = GLib.get_monotonic_time();
+            this._tickLyric();
+        });
+    }
+
+    _tickLyric() {
+        const lines = this._lyricLines;
+        if (!lines?.length || this._lyricPosAt === undefined) return;
+        const us = this._lyricPos + (this._latestMedia?.playing ? GLib.get_monotonic_time() - this._lyricPosAt : 0);
+        const i = lineAt(lines, us / 1000);
+        if (i === this._lyricShown) return;
+        this._lyricShown = i;
+        const text = i >= 0 ? (lines[i].text || '• • •') : (this._latestMedia?.title ?? '• • •');
+        const label = this._lyricLabel;
+        label.remove_all_transitions();
+        if (!label.text || !label.is_mapped()) {
+            label.text = text;
+            label.translation_y = 0;
+            label.opacity = 255;
+            this._resizeCollapsed();
+            return;
+        }
+        label.ease({translation_y: -10, opacity: 0, duration: 160, mode: Clutter.AnimationMode.EASE_IN_QUAD,
+            onComplete: () => {
+                label.text = text;
+                label.translation_y = 10;
+                this._resizeCollapsed();
+                label.ease({translation_y: 0, opacity: 255, duration: 260, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
+            }});
+    }
+
+    /* a hex colour scaled toward black */
+    _shade(hex, f) {
+        const c = parseInt(hex.slice(1), 16);
+        const ch = v => Math.round(v * f).toString(16).padStart(2, '0');
+        return `#${ch(c >> 16 & 255)}${ch(c >> 8 & 255)}${ch(c & 255)}`;
     }
 
     _stopCapture() {
@@ -594,6 +718,8 @@ class Notch extends St.Widget {
 
     stop() {
         this._stopped = true;
+        if (this._lyricTimer) { GLib.source_remove(this._lyricTimer); this._lyricTimer = 0; }
+        this._springTl?.stop();
         this._clearHoverTimeout();
         this._clearCollapseTimeout();
         this._stopClock();
@@ -756,6 +882,7 @@ class Notch extends St.Widget {
     _expand() {
         if (this._peekActive) this._dismissPeek(true);
         this._expanded = true;
+        this._syncRadius(true);
         this._expandedLayer.visible = true;
         this._updateClocks();
         this._content.remove_all_transitions();
@@ -763,8 +890,8 @@ class Notch extends St.Widget {
         this._content.opacity = 255;
         this._switchTab(this._shelfPending ? 'shelf' : this._activeTab);
         this._shelfPending = false;
-        this.remove_all_transitions();
-        this._springEase({width: this._ew, height: this._expandedHeight()}, ANIM_MS * 1.6);
+        this._stopSizeAnim();
+        this._springEase({width: this._ew, height: this._expandedHeight()}, 640, 0.6);
         this._collapsed.ease({opacity: 0, duration: ANIM_MS * 0.3, mode: Clutter.AnimationMode.EASE_OUT_QUAD,
             onComplete: () => this._collapsed.hide()});
         /* content arrives with the shape, so a quick hover never shows an empty block */
@@ -786,12 +913,13 @@ class Notch extends St.Widget {
         this._shelfDrop = null;
         this._modules?.notes?._releaseGrab?.();
         this._expanded = false;
+        this._syncRadius(true);
         this._modules?.system?.setFocused?.(false);
         this._modules?.quick?.setFocused?.(false);
         this._collapsed.show();
-        this.remove_all_transitions();
+        this._stopSizeAnim();
         const targetW = this._measureCollapsedWidth();
-        this._springEase({width: targetW, height: this._ch}, ANIM_MS * 1.3, 1.04);
+        this._springEase({width: targetW, height: this._ch}, 520, 0.78);
         /* The notch closes over its content (the clip trims it) and the pill
            fades in before that content is gone, so it never shrinks as an
            empty box. */
@@ -950,7 +1078,7 @@ class Notch extends St.Widget {
         const target = this._expandedHeight();
         /* already heading there (e.g. expand still running): don't restart the spring */
         if (Math.abs((this._targetH ?? this.height) - target) > 2)
-            this._springEase({width: this._ew, height: target}, 340, 1.06);
+            this._springEase({width: this._ew, height: target}, 460, 0.75);
     }
 
     _renderTab() {
@@ -1043,8 +1171,10 @@ class Notch extends St.Widget {
                 if (this._accentUrl !== info.artUrl) return;
                 this._accent = this._coverColors(path)?.accent ?? DEFAULT_ACCENT;
                 this._wave.setColor(this._accent);
+                this._applyPillMode();
             });
         }
+        this._syncLyricPill();
         const show = !!(info?.playing || info?.paused) && this._settings.get_boolean('show-media-pill');
         const changed = show !== this._wave.visible;
         this._wave.visible = show;
@@ -1149,10 +1279,10 @@ class Notch extends St.Widget {
             return b;
         };
         ctrls.add_child(btn('format-justify-left-symbolic', () => {
-            this._showLyrics = !this._showLyrics;
+            this._settings.set_boolean('lyrics-enabled', !this._settings.get_boolean('lyrics-enabled'));
             this._musicCardInfo = null;
             this._renderTab();
-        }, 'Lyrics', {active: !!this._showLyrics}));
+        }, 'Lyrics', {active: this._settings.get_boolean('lyrics-enabled')}));
         ctrls.add_child(new St.Widget({x_expand: true}));
         const center = new St.BoxLayout({style_class: 'nexnotch-player-transport'});
         center.add_child(btn('media-playlist-shuffle-symbolic', () => mpris.toggleShuffle(), 'Shuffle',
@@ -1175,7 +1305,7 @@ class Notch extends St.Widget {
         card.add_child(ctrls);
 
         let alive = true;
-        if (this._showLyrics) {
+        if (this._settings.get_boolean('lyrics-enabled')) {
             const lyr = this._buildLyrics(info, () => alive);
             card.add_child(lyr.box);
             syncLyrics = lyr.sync;
@@ -1299,10 +1429,15 @@ class Notch extends St.Widget {
             if (!lines) return;
             const i = lineAt(lines, us / 1000);
             if (i === shown) return;
+            const step = i === shown + 1 && box.is_mapped() ? prev.height + box.get_theme_node().get_length('spacing') : 0;
             shown = i;
             prev.text = lines[i - 1]?.text ?? '';
             cur.text  = i >= 0 ? (lines[i].text || '♪') : '♪';
             next.text = lines[i + 1]?.text ?? '';
+            /* moving to the next line: start a row lower and glide up, like scrolling */
+            box.remove_all_transitions();
+            box.translation_y = step;
+            if (step) box.ease({translation_y: 0, duration: 340, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
         };
 
         this._lyrics ??= new Lyrics();
@@ -1313,7 +1448,7 @@ class Notch extends St.Widget {
             else if (!result.synced) cur.text = 'Only unsynced lyrics are available';
             else { lines = result.synced; sync(lastUs); }
         });
-        return {box, sync};
+        return {box: new St.Bin({child: box, x_expand: true, clip_to_allocation: true}), sync};
     }
 
     /* file:// art is used in place; https art (Spotify) is cached by URL hash */
@@ -1372,10 +1507,10 @@ class Notch extends St.Widget {
         this._peekLayer = peek;
         this._peekActive = true;
         this._collapsed.hide();
-        this.remove_all_transitions();
+        this._stopSizeAnim();
         peek.opacity = 0;
         peek.ease({opacity: 255, duration: 180, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
-        this._springEase({width, height}, 380, 1.08);
+        this._springEase({width, height}, 520, 0.68);
         if (hold) {
             peek.connect('notify::hover', () => {
                 if (this._peekLayer !== peek) return;
@@ -1799,7 +1934,7 @@ class Notch extends St.Widget {
         this._peekActive = true;
         this._collapsed.hide();
 
-        this.remove_all_transitions();
+        this._stopSizeAnim();
         peek.opacity = 0;
         peek.set_pivot_point(0.5, 0);
         peek.scale_x = 0.94; peek.scale_y = 0.94;
@@ -1873,6 +2008,7 @@ class Notch extends St.Widget {
             this._peekLayer = null;
             if (!this._expanded) {
                 this._collapsed.show();
+                this._stopSizeAnim();
                 this.ease({width: this._measureCollapsedWidth(), height: this._ch, duration: 220, mode: Clutter.AnimationMode.EASE_OUT_EXPO});
             }
         };

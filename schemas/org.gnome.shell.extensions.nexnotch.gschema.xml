@@ -18,6 +18,7 @@
     <key name="show-date"        type="b"><default>true</default><summary>Show date next to time in collapsed pill</summary></key>
     <key name="show-seconds"     type="b"><default>false</default><summary>Include seconds in the clock</summary></key>
     <key name="show-media-pill"  type="b"><default>true</default><summary>Show the playing track in the collapsed pill</summary></key>
+    <key name="lyrics-enabled"   type="b"><default>false</default><summary>Show synced lyrics in the player and the collapsed pill</summary></key>
     <key name="clock-format"     type="s"><default>"24h"</default><summary>Clock format (24h / 12h)</summary></key>
 
     <!-- size -->
