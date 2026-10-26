@@ -56,8 +56,8 @@
 
     <!-- notes -->
     <key name="notes-folder" type="s">
-      <default>"/home/mert/Yazılım/MertProjeler/NexNotchNotes"</default>
-      <summary>Folder where notes are saved as markdown files, one dated subfolder per day</summary>
+      <default>""</default>
+      <summary>Folder where notes are saved as markdown files, one dated subfolder per day (empty = ~/Documents/NexNotch Notes)</summary>
     </key>
 
     <!-- weather -->
