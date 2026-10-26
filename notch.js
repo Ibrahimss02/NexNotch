@@ -15,6 +15,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Volume from 'resource:///org/gnome/shell/ui/status/volume.js';
 import {BarLevel} from 'resource:///org/gnome/shell/ui/barLevel.js';
 import {Slider} from 'resource:///org/gnome/shell/ui/slider.js';
+import {getRfkillManager} from 'resource:///org/gnome/shell/ui/status/rfkill.js';
 
 import {SystemMonitor}    from './modules/system.js';
 import {NotificationPeek} from './modules/notifications.js';
@@ -47,6 +48,8 @@ const PAGE_PX           = 220;   // drag distance per tab; past half of it the t
 const FLICK_MS          = 180;   // how far ahead a flick's speed is projected
 const MAX_FLICK_TABS    = 3;
 const SCROLL_UNIT_PX    = 10;    // Clutter reports touchpad scroll in ~10 px units
+const ICONS_DIR = Gio.File.new_for_uri(import.meta.url).get_parent().get_child('icons');
+const ownIcon = name => Gio.FileIcon.new(ICONS_DIR.get_child(`${name}.svg`));
 const TAB_IDS = ['history', 'system', 'claude', 'calendar', 'notes', 'shelf', 'weather', 'pomodoro', 'water', 'quick'];
 
 export const Notch = GObject.registerClass(
@@ -161,16 +164,7 @@ class Notch extends St.Widget {
 
     _measureCollapsedWidth() {
         try {
-            /* Equal-width sides keep a centred clock truly centred. */
             this._collapsed.set_width(-1);
-            this._leftCluster.set_width(-1);
-            this._rightCluster.set_width(-1);
-            if (this._clockLabel.get_parent() === this._centerCluster) {
-                const w = Math.max(this._leftCluster.get_preferred_width(this._ch)[1],
-                    this._rightCluster.get_preferred_width(this._ch)[1]);
-                this._leftCluster.set_width(w);
-                this._rightCluster.set_width(w);
-            }
             const [, natW] = this._collapsed.get_preferred_width(this._ch);
             const w = Math.max(this._cwMin, natW);
             this._collapsed.set_width(w);
@@ -301,10 +295,6 @@ class Notch extends St.Widget {
 
         /* left: battery · centre: clock · right: date, timer, playing waveform */
         this._leftCluster = new St.BoxLayout({style_class: 'nexnotch-cluster nexnotch-left', vertical: false});
-        this._captureBtn = new St.Button({style_class: 'nexnotch-capture', visible: false, can_focus: true,
-            track_hover: true, y_align: Clutter.ActorAlign.CENTER, accessible_name: 'Stop recording or sharing'});
-        this._captureBtn.connect('clicked', () => this._stopCapture());
-        this._leftCluster.add_child(this._captureBtn);
         this._batteryIcon = new BatteryGlyph();
         this._batteryIcon.visible = false;
         this._batteryPct = new St.Label({text: '', style_class: 'nexnotch-battery-pct', visible: false, y_align: Clutter.ActorAlign.CENTER});
@@ -329,13 +319,60 @@ class Notch extends St.Widget {
         this._pomoChip.add_child(this._pomoLabel);
         this._wave = new Waveform(4);
         this._wave.visible = false;
+        /* DND / airplane icons and camera / mic dots, after the date */
+        this._statusBox = new St.BoxLayout({style_class: 'nexnotch-status', visible: false, y_align: Clutter.ActorAlign.CENTER});
+        this._statusIcons = {
+            dnd: new St.Icon({gicon: ownIcon('moon'), style_class: 'nexnotch-status-icon'}),
+            airplane: new St.Icon({gicon: ownIcon('airplane'), style_class: 'nexnotch-status-icon'}),
+            camera: new St.Widget({style_class: 'nexnotch-status-dot camera'}),
+            mic: new St.Widget({style_class: 'nexnotch-status-dot mic'}),
+        };
+        for (const w of Object.values(this._statusIcons)) {
+            w.visible = false;
+            w.y_align = Clutter.ActorAlign.CENTER;
+            this._statusBox.add_child(w);
+        }
         this._rightCluster.add_child(this._dateLabelC);
+        this._rightCluster.add_child(this._statusBox);
         this._rightCluster.add_child(this._pomoChip);
         this._rightCluster.add_child(this._wave);
 
         this._collapsed.add_child(this._leftCluster);
         this._collapsed.add_child(this._centerCluster);
         this._collapsed.add_child(this._rightCluster);
+
+        /* screen recording / sharing take over the pill: what's happening + a stop button */
+        this._stopBtns = [];
+        const stopBtn = (child, name) => {
+            const b = new St.Button({style_class: 'nexnotch-capture-stop', child, can_focus: true, track_hover: true,
+                y_align: Clutter.ActorAlign.CENTER, accessible_name: name});
+            b.connect('clicked', () => this._stopCapture());
+            this._stopBtns.push(b);
+            return b;
+        };
+        this._recBox = new St.BoxLayout({style_class: 'nexnotch-capture-box', x_expand: true, visible: false});
+        const rec = new St.BoxLayout({style_class: 'nexnotch-rec', y_align: Clutter.ActorAlign.CENTER});
+        this._recDot = new St.Widget({style_class: 'nexnotch-rec-dot', y_align: Clutter.ActorAlign.CENTER});
+        this._recTime = new St.Label({text: 'REC', y_align: Clutter.ActorAlign.CENTER});
+        rec.add_child(this._recDot);
+        rec.add_child(this._recTime);
+        this._recClock = new St.Label({style_class: 'nexnotch-clock', x_expand: true,
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
+        this._recBox.add_child(rec);
+        this._recBox.add_child(this._recClock);
+        const stopRec = stopBtn(new St.Widget({style_class: 'nexnotch-capture-square'}), 'Stop recording');
+        stopRec.add_style_class_name('square');
+        this._recBox.add_child(stopRec);
+        this._shareBox = new St.BoxLayout({style_class: 'nexnotch-capture-box', x_expand: true, visible: false});
+        const share = new St.BoxLayout({style_class: 'nexnotch-share', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        share.add_child(new St.Icon({gicon: ownIcon('screen-share'), style_class: 'nexnotch-share-icon', y_align: Clutter.ActorAlign.CENTER}));
+        share.add_child(new St.Label({text: 'Sharing screen', y_align: Clutter.ActorAlign.CENTER}));
+        this._shareBox.add_child(share);
+        const stopShare = stopBtn(new St.Label({text: 'Stop'}), 'Stop sharing');
+        stopShare.add_style_class_name('text');
+        this._shareBox.add_child(stopShare);
+        this._collapsed.add_child(this._recBox);
+        this._collapsed.add_child(this._shareBox);
 
         /* expanded layer */
         this._expandedLayer = new St.BoxLayout({
@@ -417,6 +454,7 @@ class Notch extends St.Widget {
         this._startClock();
         this._updateBatteryIcon();
         this._watchCapture();
+        this._watchStatus();
     }
 
     /* Mirror GNOME's own (hidden) top-bar recording/sharing indicators:
@@ -431,18 +469,99 @@ class Notch extends St.Widget {
 
     _syncCapture() {
         const {screenRecording: rec, screenSharing: share} = Main.panel.statusArea;
-        const recording = !!rec?.visible;
-        const label = recording ? `● ${rec._label?.text ?? ''}` : '● Sharing';
-        const visible = recording || !!share?.visible;
-        const resize = visible !== this._captureBtn.visible || label.length !== this._captureBtn.label?.length;
-        this._captureBtn.label = label;
-        this._captureBtn.visible = visible;
-        if (resize) this._resizeCollapsed();
+        const mode = rec?.visible ? 'rec' : share?.visible ? 'share' : null;
+        const time = `REC ${rec?._label?.text ?? ''}`.trim();
+        const grew = time.length !== this._recTime.text.length;
+        this._recTime.text = time;
+        if (mode === this._captureMode) {
+            if (grew && mode === 'rec') this._resizeCollapsed();
+            return;
+        }
+        this._captureMode = mode;
+        for (const c of [this._leftCluster, this._centerCluster, this._rightCluster]) c.visible = !mode;
+        this._recBox.visible = mode === 'rec';
+        this._shareBox.visible = mode === 'share';
+        if (mode) this._collapsed.add_style_class_name('capture');
+        else this._collapsed.remove_style_class_name('capture');
+        this._recDot.remove_all_transitions();
+        this._recDot.opacity = 255;
+        if (mode === 'rec') {
+            this._recDot.ease({opacity: 90, duration: 600, mode: Clutter.AnimationMode.EASE_IN_OUT_SINE,
+                repeatCount: -1, autoReverse: true});
+        }
+        this._resizeCollapsed();
     }
 
     _stopCapture() {
         if (Main.screenshotUI.screencast_in_progress) Main.screenshotUI.stopScreencast();
         else Main.panel.statusArea.screenSharing?._stopSharing?.();
+    }
+
+    /* DND, airplane mode, camera and mic: shown in the pill while on, with a
+       toast when they change */
+    _watchStatus() {
+        this._statusState = {};
+        this._dndSettings ??= new Gio.Settings({schema_id: 'org.gnome.desktop.notifications'});
+        this._dndSettings.connectObject('changed::show-banners', () => this._onStatus('dnd'), this);
+        this._rfkill = getRfkillManager();
+        this._rfkill.connectObject('notify::airplane-mode', () => this._onStatus('airplane'), this);
+        this._watchPrivacy();
+    }
+
+    /* quick settings creates its indicators asynchronously */
+    _watchPrivacy(tries = 0) {
+        const qs = Main.panel.statusArea.quickSettings;
+        const cam = qs?._camera?._indicator, mic = qs?._volumeInput?._indicator;
+        if ((!cam || !mic) && tries < 10) {
+            this._privacyRetry = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 2, () => {
+                this._privacyRetry = 0;
+                this._watchPrivacy(tries + 1);
+                return GLib.SOURCE_REMOVE;
+            });
+            this._syncStatus();
+            return;
+        }
+        cam?.connectObject('notify::visible', () => this._onStatus('camera'), this);
+        mic?.connectObject('notify::visible', () => this._onStatus('mic'), this);
+        this._privacy = {cam, mic};
+        this._syncStatus();
+    }
+
+    _statusOn(kind) {
+        if (kind === 'dnd') return this._dndActive();
+        if (kind === 'airplane') return !!this._rfkill?.airplaneMode;
+        if (kind === 'camera') return !!this._privacy?.cam?.visible;
+        return !!this._privacy?.mic?.visible;
+    }
+
+    _syncStatus() {
+        let any = false;
+        for (const [kind, w] of Object.entries(this._statusIcons)) {
+            w.visible = this._statusState[kind] = this._statusOn(kind);
+            any ||= w.visible;
+        }
+        this._statusBox.visible = any;
+        this._resizeCollapsed();
+    }
+
+    _onStatus(kind) {
+        const on = this._statusOn(kind);
+        if (on === this._statusState[kind]) return;
+        this._syncStatus();
+        if (kind === 'camera' || kind === 'mic') {
+            if (on) this._peekPrivacy(kind);
+        } else {
+            this._peekToggle(kind, on);
+        }
+    }
+
+    _stopStatus() {
+        if (this._privacyRetry) { GLib.source_remove(this._privacyRetry); this._privacyRetry = 0; }
+        this._dndSettings?.disconnectObject(this);
+        this._rfkill?.disconnectObject(this);
+        this._privacy?.cam?.disconnectObject(this);
+        this._privacy?.mic?.disconnectObject(this);
+        this._privacy = null;
     }
 
     _startEnabledModules() {
@@ -489,6 +608,8 @@ class Notch extends St.Widget {
         Main.panel.statusArea.screenRecording?.disconnectObject(this);
         Main.panel.statusArea.screenRecording?._label?.disconnectObject(this);
         Main.panel.statusArea.screenSharing?.disconnectObject(this);
+        this._recDot?.remove_all_transitions();
+        this._stopStatus();
         for (const m of Object.values(this._modules)) m.stop?.();
         this._lyrics?.destroy();
         this._lyrics = null;
@@ -562,6 +683,7 @@ class Notch extends St.Widget {
         };
         const time = now.toLocaleTimeString([], timeOpts);
         this._clockLabel.text = time;
+        this._recClock.text = time;
         this._bigClock.text   = time;
         this._dateLabelC.text = this._formatCompactDate(now);
         this._dateLabelC.visible = showDate && !this._pomoChip.visible;
@@ -610,7 +732,7 @@ class Notch extends St.Widget {
         this._hoverTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, HOVER_DELAY_MS, () => {
             this._hoverTimeout = 0;
             if (this._peekActive) return GLib.SOURCE_REMOVE;
-            if (this._captureBtn.hover) return GLib.SOURCE_REMOVE;
+            if (this._stopBtns.some(b => b.hover)) return GLib.SOURCE_REMOVE;
             if (this.hover || this._pointerInside()) this._expand();
             return GLib.SOURCE_REMOVE;
         });
@@ -1335,8 +1457,7 @@ class Notch extends St.Widget {
         else title = 'Charging';
         if (info.plugged) {
             left.add_style_class_name('plugged');
-            left.add_child(new St.Icon({gicon: Gio.ThemedIcon.new_from_names(['thunderbolt-symbolic', 'battery-full-charging-symbolic']),
-                style_class: 'nexnotch-peek-charge-icon', y_align: Clutter.ActorAlign.CENTER}));
+            left.add_child(new St.Icon({gicon: ownIcon('bolt'), style_class: 'nexnotch-peek-charge-icon', y_align: Clutter.ActorAlign.CENTER}));
         } else {
             const glyph = new BatteryGlyph();
             glyph.set((pct ?? 0) / 100, pct !== null && pct < 20 ? '#FF453A' : '#FFFFFF');
@@ -1466,6 +1587,55 @@ class Notch extends St.Widget {
             onClick: () => { this._switchTab('shelf'); this._expand(); }});
     }
 
+    /* "Do Not Disturb · On" / "Airplane Mode · Off" */
+    _peekToggle(kind, on) {
+        if (!this._settings.get_boolean('show-notifications')) return;
+        const [name, iconName] = kind === 'dnd' ? ['Do Not Disturb', 'moon'] : ['Airplane Mode', 'airplane'];
+        const row = new St.BoxLayout({style_class: `nexnotch-peek-row compact nexnotch-peek-toggle ${kind}`, x_expand: true});
+        if (!on) row.add_style_class_name('off');
+        const left = new St.BoxLayout({style_class: 'nexnotch-peek-toggle-name', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        left.add_child(new St.Icon({gicon: ownIcon(iconName), style_class: 'nexnotch-peek-toggle-icon',
+            opacity: on ? 255 : 110, y_align: Clutter.ActorAlign.CENTER}));
+        left.add_child(new St.Label({text: name, y_align: Clutter.ActorAlign.CENTER}));
+        row.add_child(left);
+        row.add_child(new St.Label({text: on ? 'On' : 'Off', style_class: 'nexnotch-peek-toggle-state', y_align: Clutter.ActorAlign.CENTER}));
+        this._showPeek(row, {width: 252, height: this._ch, duration: POWER_PEEK_MS});
+    }
+
+    /* camera or mic just started: which one, and the app using the mic */
+    _peekPrivacy(kind) {
+        if (!this._settings.get_boolean('show-notifications')) return;
+        const cam = kind === 'camera';
+        const badge = new St.Bin({style_class: `nexnotch-peek-privacy-badge ${kind}`, y_align: Clutter.ActorAlign.CENTER,
+            child: new St.Icon({gicon: ownIcon(cam ? 'camera' : 'mic'), style_class: 'nexnotch-peek-privacy-icon'})});
+        const app = cam ? null : this._micApp();
+        const row = this._peekCard(badge, [
+            [cam ? 'Camera in use' : 'Microphone in use', 'nexnotch-peek-privacy-title'],
+            [app ? `by ${app}` : null, 'nexnotch-peek-privacy-app'],
+        ]);
+        row.add_style_class_name('privacy');
+        this._showPeek(row, {width: 270, height: 47, duration: POWER_PEEK_MS});
+    }
+
+    _micApp() {
+        const skipped = ['org.gnome.VolumeControl', 'org.PulseAudio.pavucontrol'];
+        const out = Volume.getMixerControl().get_source_outputs().find(o => !skipped.includes(o.get_application_id()));
+        if (!out) return null;
+        const id = out.get_application_id();
+        return (id && Shell.AppSystem.get_default().lookup_app(`${id}.desktop`)?.get_name()) || out.get_name() || null;
+    }
+
+    /* GNOME's "Screenshot captured" notification, as a thumbnail + check */
+    _peekScreenshot(notif) {
+        const thumb = new St.Bin({style_class: 'nexnotch-peek-shot', y_align: Clutter.ActorAlign.CENTER,
+            child: new Clutter.Actor({content: notif.gicon, content_gravity: Clutter.ContentGravity.RESIZE_ASPECT,
+                x_expand: true, y_expand: true})});
+        const check = new St.Bin({style_class: 'nexnotch-peek-shot-check', y_align: Clutter.ActorAlign.CENTER,
+            child: new St.Icon({icon_name: 'object-select-symbolic', style_class: 'nexnotch-peek-shot-check-icon'})});
+        const row = this._peekCard(thumb, [['Screenshot', 'nexnotch-peek-title'], ['Copied to clipboard', 'nexnotch-peek-body']], check);
+        this._showPeek(row, {width: 306, height: 65, duration: POWER_PEEK_MS, onClick: () => notif.activate()});
+    }
+
     _peekWater() {
         if (this._dndActive() || !this._settings.get_boolean('show-notifications')) return;
         const water = this._modules.water;
@@ -1535,11 +1705,14 @@ class Notch extends St.Widget {
     _peekNotification(source, notif, iconSize = 28) {
         if (this._expanded) return;
         if (!this._settings.get_boolean('show-notifications')) return;   /* master off */
-        if (this._dndActive()) return;   /* respect GNOME's Do Not Disturb */
+        /* a screenshot is the user's own action, so it shows even in DND */
+        const shot = source?.iconName === 'screenshooter-symbolic' && notif?.gicon instanceof St.ImageContent;
+        if (this._dndActive() && !shot) return;   /* respect GNOME's Do Not Disturb */
         this._dismissPeek(true);
         if (this._settings.get_boolean('notif-suppress-native')) {
             this._killBanner(0); this._killBanner(60); this._killBanner(220);
         }
+        if (shot) { this._peekScreenshot(notif); return; }
 
         const title = notif?.title ?? source?.title ?? 'Notification';
         let body  = notif?.bannerBodyText ?? notif?.body ?? '';

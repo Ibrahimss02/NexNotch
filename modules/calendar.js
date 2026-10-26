@@ -117,9 +117,14 @@ export const CalendarPeek = GObject.registerClass({
 
     _refreshRange() {
         if (!this._proxy) return;
-        const now = Math.floor(Date.now() / 1000);
-        const until = now + 14 * 24 * 3600;
-        try { this._proxy.SetTimeRangeRemote(now, until, false, () => {}); } catch (e) { logError(e); }
+        /* the next two weeks for Up next, plus the whole month on view */
+        const now = new Date();
+        const offset = this._calMonthOffset ?? 0;
+        const first = new Date(now.getFullYear(), now.getMonth() + offset, 1).getTime() / 1000;
+        const last = new Date(now.getFullYear(), now.getMonth() + offset + 1, 1).getTime() / 1000;
+        const since = Math.min(Math.floor(now.getTime() / 1000), first);
+        const until = Math.max(Math.floor(now.getTime() / 1000) + 14 * 24 * 3600, last);
+        try { this._proxy.SetTimeRangeRemote(since, until, false, () => {}); } catch (e) { logError(e); }
     }
 
     _onEventsAdded(tuples) {
@@ -289,13 +294,23 @@ export const CalendarPeek = GObject.registerClass({
         box.add_child(this._monthGrid());
 
         const agenda = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-card nexnotch-cal-agenda'});
-        agenda.add_child(new St.Label({text: 'UP NEXT', style_class: 'nexnotch-caps'}));
-        const events = this._filterEvents(this._events).filter(ev => ev.end * 1000 >= Date.now());
+        const day = this._selectedDay;
+        let events;
+        if (day) {
+            const from = day.getTime() / 1000;
+            const to = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime() / 1000;
+            events = this._filterEvents(this._events).filter(ev => ev.start < to && Math.max(ev.end, ev.start + 1) > from);
+            agenda.add_child(new St.Label({text: day.toLocaleDateString([], {weekday: 'short', day: 'numeric', month: 'short'}).toUpperCase(),
+                style_class: 'nexnotch-caps'}));
+        } else {
+            events = this._filterEvents(this._events).filter(ev => ev.end * 1000 >= Date.now());
+            agenda.add_child(new St.Label({text: 'UP NEXT', style_class: 'nexnotch-caps'}));
+        }
         if (events.length === 0) {
             const empty = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true, style_class: 'nexnotch-cal-empty',
                 y_align: Clutter.ActorAlign.CENTER});
             empty.add_child(new St.Icon({icon_name: 'x-office-calendar-symbolic', style_class: 'nexnotch-cal-empty-icon', x_align: Clutter.ActorAlign.CENTER}));
-            empty.add_child(new St.Label({text: 'No more events today', style_class: 'nexnotch-cal-empty-title', x_align: Clutter.ActorAlign.CENTER}));
+            empty.add_child(new St.Label({text: day ? 'No events' : 'No more events today', style_class: 'nexnotch-cal-empty-title', x_align: Clutter.ActorAlign.CENTER}));
             const hint = new St.Label({text: 'Events from your connected calendars show here.', style_class: 'nexnotch-muted', x_align: Clutter.ActorAlign.CENTER});
             hint.clutter_text.line_wrap = true;
             hint.clutter_text.line_alignment = Pango.Alignment.CENTER;
@@ -305,7 +320,7 @@ export const CalendarPeek = GObject.registerClass({
             const scroll = new St.ScrollView({style_class: 'nexnotch-cal-agenda-scroll', x_expand: true, y_expand: true,
                 hscrollbar_policy: St.PolicyType.NEVER, overlay_scrollbars: true});
             const inner = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-cal-rows'});
-            for (const ev of events.slice(0, 24)) inner.add_child(this._eventRow(ev));
+            for (const ev of events.slice(0, 24)) inner.add_child(this._eventRow(ev, !!day));
             scroll.set_child(inner);
             agenda.add_child(scroll);
         }
@@ -313,9 +328,11 @@ export const CalendarPeek = GObject.registerClass({
         return box;
     }
 
-    _eventRow(ev) {
+    _eventRow(ev, timeOnly) {
         const row = new St.BoxLayout({style_class: 'nexnotch-cal-row'});
-        row.add_child(new St.Label({text: this._formatTime(ev), style_class: 'nexnotch-cal-when', y_align: Clutter.ActorAlign.CENTER}));
+        const when = !timeOnly ? this._formatTime(ev)
+            : ev.allDay ? 'All day' : new Date(ev.start * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+        row.add_child(new St.Label({text: when, style_class: 'nexnotch-cal-when', y_align: Clutter.ActorAlign.CENTER}));
         const title = new St.Label({text: ev.summary, style_class: 'nexnotch-cal-title', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         row.add_child(title);
@@ -345,7 +362,12 @@ export const CalendarPeek = GObject.registerClass({
         header.add_child(title);
         const nav = (icon, step, name) => {
             const b = new St.Button({style_class: 'nexnotch-cal-nav', child: new St.Icon({icon_name: icon}), accessible_name: name, can_focus: true});
-            b.connect('clicked', () => { this._calMonthOffset = offset + step; this.emit('updated'); });
+            b.connect('clicked', () => {
+                this._calMonthOffset = offset + step;
+                this._selectedDay = null;
+                this._refreshRange();
+                this.emit('updated');
+            });
             return b;
         };
         header.add_child(nav('go-previous-symbolic', -1, 'Previous month'));
@@ -368,9 +390,14 @@ export const CalendarPeek = GObject.registerClass({
         for (let day = 1; day <= daysInMonth; day++) {
             const cell = new St.BoxLayout({style_class: 'nexnotch-cal-cell', vertical: true});
             /* the circle is a Bin so the number can be centred in it both ways */
-            const num = new St.Bin({style_class: 'nexnotch-cal-day', x_align: Clutter.ActorAlign.CENTER,
+            const date = new Date(year, month, day);
+            const selected = this._selectedDay?.getTime() === date.getTime();
+            const num = new St.Button({style_class: 'nexnotch-cal-day', x_align: Clutter.ActorAlign.CENTER, can_focus: true,
+                accessible_name: date.toLocaleDateString([], {dateStyle: 'full'}),
                 child: new St.Label({text: String(day), x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER})});
+            num.connect('clicked', () => { this._selectedDay = selected ? null : date; this.emit('updated'); });
             if (isCurrentMonth && day === now.getDate()) num.add_style_class_name('today');
+            if (selected) num.add_style_class_name('selected');
             cell.add_child(num);
             const dot = new St.Widget({style_class: 'nexnotch-cal-dot', x_align: Clutter.ActorAlign.CENTER});
             dot.opacity = eventDays.has(day) ? 255 : 0;
