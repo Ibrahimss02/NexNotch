@@ -6,15 +6,17 @@
     <!-- modules -->
     <key name="show-system"        type="b"><default>true</default><summary>Show system monitor in expanded view</summary></key>
     <key name="show-notifications" type="b"><default>true</default><summary>Enable dynamic notification peek</summary></key>
-    <key name="hide-top-bar"       type="b"><default>false</default><summary>Hide the GNOME top bar so only the notch remains</summary></key>
     <key name="show-calendar"      type="b"><default>true</default><summary>Enable Google Calendar peek</summary></key>
     <key name="show-tasks"         type="b"><default>true</default><summary>Enable Google Tasks peek</summary></key>
+    <key name="show-water"         type="b"><default>true</default><summary>Drink-water reminder (cup in the collapsed pill)</summary></key>
+    <key name="water-interval"     type="i"><default>10</default><range min="1" max="120"/><summary>Minutes between drink-water reminders</summary></key>
     <key name="show-claude-usage"  type="b"><default>true</default><summary>Show Claude Code usage/limit tab</summary></key>
 
     <!-- clock -->
     <key name="hide-datemenu"    type="b"><default>true</default><summary>Hide the built-in GNOME clock / date menu</summary></key>
     <key name="show-date"        type="b"><default>true</default><summary>Show date next to time in collapsed pill</summary></key>
     <key name="show-seconds"     type="b"><default>false</default><summary>Include seconds in the clock</summary></key>
+    <key name="show-media-pill"  type="b"><default>true</default><summary>Show the playing track in the collapsed pill</summary></key>
     <key name="clock-format"     type="s"><default>"24h"</default><summary>Clock format (24h / 12h)</summary></key>
 
     <!-- size -->
@@ -22,6 +24,7 @@
     <key name="collapsed-height" type="i"><default>32</default> <range min="24"  max="56"/> <summary>Collapsed notch height</summary></key>
     <key name="expanded-width"   type="i"><default>640</default><range min="420" max="960"/><summary>Expanded notch width</summary></key>
     <key name="expanded-height"  type="i"><default>280</default><range min="200" max="480"/><summary>Expanded notch height</summary></key>
+    <key name="last-tab"         type="s"><default>"history"</default><summary>Tab shown when the notch expands (the last one opened)</summary></key>
     <key name="corner-radius"    type="i"><default>20</default> <range min="0"   max="32"/> <summary>Bottom corner radius</summary></key>
 
     <!-- colors (CSS rgba strings so users can use any transparency) -->

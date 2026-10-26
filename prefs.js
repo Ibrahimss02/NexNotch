@@ -19,7 +19,6 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         window.add(this._notifPage(settings));
         window.add(this._weatherPage(settings));
         window.add(this._claudePage(settings));
-        window.add(this._notesPage(settings));
         window.add(this._pomodoroPage(settings));
         window.add(await this._accountsPage(settings));
         window.add(this._keybindPage(settings));
@@ -32,9 +31,16 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         modGroup.add(this._boolRow(settings, 'show-system',        'System monitor'));
         modGroup.add(this._boolRow(settings, 'show-notifications', 'Dynamic notification peek'));
         modGroup.add(this._boolRow(settings, 'show-calendar',      'Google Calendar'));
-        modGroup.add(this._boolRow(settings, 'show-tasks',         'Google Tasks'));
-        modGroup.add(this._boolRow(settings, 'show-claude-usage',  'Antigravity usage'));
+        modGroup.add(this._boolRow(settings, 'show-claude-usage',  'Claude Code usage'));
         page.add(modGroup);
+
+        const waterGroup = new Adw.PreferencesGroup({
+            title: 'Drink water',
+            description: 'A cup in the collapsed pill drains over the interval, then reminds you and refills.',
+        });
+        waterGroup.add(this._boolRow(settings, 'show-water', 'Drink-water reminder'));
+        waterGroup.add(this._intRow(settings, 'water-interval', 'Remind every (min)', 1, 120, 1));
+        page.add(waterGroup);
 
         const perfGroup = new Adw.PreferencesGroup({title: 'Performance'});
         perfGroup.add(this._intRow(settings, 'poll-interval', 'System poll interval (s)', 1, 30, 1,
@@ -143,54 +149,13 @@ export default class NexNotchPrefs extends ExtensionPreferences {
     }
 
     _claudePage(settings) {
-        const page = new Adw.PreferencesPage({title: 'Antigravity', icon_name: 'preferences-system-symbolic'});
+        const page = new Adw.PreferencesPage({title: 'Claude', icon_name: 'preferences-system-symbolic'});
         const group = new Adw.PreferencesGroup({
-            title: 'Antigravity usage',
-            description: 'Reads the Antigravity CLI login from the GNOME keyring (the same one `agy` uses) and shows how much of each model quota is left. The login expires hourly; open `agy` to refresh it.',
+            title: 'Claude Code usage',
+            description: 'Reads the local Claude Code CLI session (the same login `claude` already uses) and shows session/weekly quota utilization. Requires having run `claude` at least once to sign in.',
         });
-        group.add(this._boolRow(settings, 'show-claude-usage', 'Show Antigravity usage tab'));
+        group.add(this._boolRow(settings, 'show-claude-usage', 'Show Claude usage tab'));
         group.add(this._intRow(settings, 'claude-usage-refresh', 'Refresh interval (min)', 5, 120, 5));
-        page.add(group);
-        return page;
-    }
-
-    _notesPage(settings) {
-        const page = new Adw.PreferencesPage({title: 'Notes', icon_name: 'text-editor-symbolic'});
-        const group = new Adw.PreferencesGroup({
-            title: 'Storage',
-            description: 'Notes are saved as markdown files (title from the note, or the body if untitled), one dated subfolder per day (DD-MM-YY).',
-        });
-
-        const folderRow = new Adw.ActionRow({
-            title: 'Notes folder',
-            subtitle: settings.get_string('notes-folder') || '(default)',
-        });
-        const browseBtn = new Gtk.Button({label: 'Browse…', css_classes: ['flat']});
-        browseBtn.connect('clicked', () => {
-            const dialog = new Gtk.FileDialog({title: 'Pick notes folder'});
-            dialog.select_folder(browseBtn.get_root(), null, (dlg, res) => {
-                try {
-                    const f = dlg.select_folder_finish(res);
-                    if (f) {
-                        const path = f.get_path();
-                        settings.set_string('notes-folder', path);
-                        folderRow.set_subtitle(path);
-                    }
-                } catch (_) {}
-            });
-        });
-        folderRow.add_suffix(browseBtn);
-        group.add(folderRow);
-
-        const openBtn = new Adw.ActionRow({title: 'Open notes folder'});
-        const open = new Gtk.Button({label: 'Open', css_classes: ['pill']});
-        open.connect('clicked', () => {
-            Gio.AppInfo.launch_default_for_uri(
-                Gio.File.new_for_path(settings.get_string('notes-folder')).get_uri(), null);
-        });
-        openBtn.add_suffix(open);
-        group.add(openBtn);
-
         page.add(group);
         return page;
     }
@@ -271,7 +236,7 @@ export default class NexNotchPrefs extends ExtensionPreferences {
     }
 
     async _accountsPage(settings) {
-        const page = new Adw.PreferencesPage({title: 'Calendar & Tasks', icon_name: 'x-office-calendar-symbolic'});
+        const page = new Adw.PreferencesPage({title: 'Calendar', icon_name: 'x-office-calendar-symbolic'});
 
         const flow = new Adw.PreferencesGroup({
             title: 'How it works',
@@ -343,19 +308,6 @@ export default class NexNotchPrefs extends ExtensionPreferences {
 
         page.add(group);
 
-        const tasksGroup = new Adw.PreferencesGroup({
-            title: 'Google Tasks lists',
-            description: 'Comma-separated list of task-list names to include. Empty shows all.',
-        });
-        const tasksEntry = new Adw.EntryRow({title: 'Allowed lists (comma-separated)'});
-        tasksEntry.set_text(settings.get_strv('tasks-enabled-lists').join(', '));
-        tasksEntry.connect('changed', () => {
-            const raw = tasksEntry.get_text() ?? '';
-            const arr = raw.split(',').map(s => s.trim()).filter(Boolean);
-            settings.set_strv('tasks-enabled-lists', arr);
-        });
-        tasksGroup.add(tasksEntry);
-        page.add(tasksGroup);
 
         return page;
     }
@@ -384,6 +336,7 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         const group = new Adw.PreferencesGroup({title: 'Clock'});
         group.add(this._boolRow(settings, 'show-date',    'Show date in collapsed pill'));
         group.add(this._boolRow(settings, 'show-seconds', 'Show seconds (updates every second)'));
+        group.add(this._boolRow(settings, 'show-media-pill', 'Show playing music in collapsed pill'));
 
         const fmt = new Adw.ComboRow({title: '12h / 24h format'});
         const fmtModel = new Gtk.StringList();

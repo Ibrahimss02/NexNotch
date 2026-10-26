@@ -4,6 +4,9 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
+const CPU_SENSORS = ['coretemp', 'k10temp', 'zenpower', 'cpu_thermal'];
+const BATTERY_REFRESH_US = 30 * 1000 * 1000;
+
 export const SystemMonitor = GObject.registerClass({
     Signals: {
         'updated': {param_types: [GObject.TYPE_JSOBJECT]},
@@ -19,8 +22,14 @@ export const SystemMonitor = GObject.registerClass({
         this._lastDisk = null;
         this._lastDiskTime = 0;
         this._cpuCores = GLib.get_num_processors();
-        this._thermalZones = this._findThermalZones();
-        this._hwmonInputs = this._findHwmonInputs();
+        /* Firmware-backed sensors (Dell WMI, ACPI zones, battery, NVMe) can
+           take up to ~50 ms per read, all on the shell's main thread. The CPU
+           sensor is the one shown and reads in microseconds, so use only it
+           when present. */
+        const hwmon = this._findHwmonInputs();
+        const cpu = hwmon.filter(h => CPU_SENSORS.includes(h.name));
+        this._hwmonInputs = cpu.length ? cpu : hwmon;
+        this._thermalZones = cpu.length ? [] : this._findThermalZones();
         this._batteryPath = this._findBattery();
         this._stats = this._emptyStats();
         this._diskCapTimer = 0;
@@ -95,7 +104,9 @@ export const SystemMonitor = GObject.registerClass({
             this._stats.temp      = this._temperature();
             this._stats.load      = this._loadAvg();
             this._stats.uptime    = this._uptime();
-            this._stats.battery   = this._battery();
+            /* battery files are ACPI-backed (~15 ms) and change slowly;
+               plug/unplug comes from UPower via refreshBattery() */
+            if (GLib.get_monotonic_time() - (this._batteryAt ?? 0) > BATTERY_REFRESH_US) this.refreshBattery();
             this.emit('updated', this._stats);
         } catch (e) { logError(e, 'nexnotch:system'); }
     }
@@ -257,11 +268,11 @@ export const SystemMonitor = GObject.registerClass({
         let max = 0;
         for (const p of this._thermalZones) {
             const v = Number(this._readFile(p).trim());
-            if (v > max) max = v;
+            if (v > max && v < 150000) max = v;
         }
         for (const h of this._hwmonInputs) {
             const v = Number(this._readFile(h.path).trim());
-            if (v > max) max = v;
+            if (v > max && v < 150000) max = v;
         }
         return max / 1000;
     }
@@ -304,6 +315,11 @@ export const SystemMonitor = GObject.registerClass({
             }
         } catch (_) {}
         return false;
+    }
+
+    refreshBattery() {
+        this._stats.battery = this._battery();
+        this._batteryAt = GLib.get_monotonic_time();
     }
 
     _battery() {

@@ -20,7 +20,7 @@ const UPOWER_XML = `
 export const QuickHub = GObject.registerClass({
     Signals: {
         'updated': {},
-        'request-collapse': {},
+        'show-submenu': {},
     },
 }, class QuickHub extends GObject.Object {
     _init(settings) {
@@ -60,9 +60,12 @@ export const QuickHub = GObject.registerClass({
                     return GLib.SOURCE_CONTINUE;
                 });
             }
-        } else if (this._poller) {
-            GLib.source_remove(this._poller);
-            this._poller = 0;
+        } else {
+            this.closeSubmenu();
+            if (this._poller) {
+                GLib.source_remove(this._poller);
+                this._poller = 0;
+            }
         }
     }
 
@@ -73,6 +76,7 @@ export const QuickHub = GObject.registerClass({
             try { GLib.source_remove(id); } catch (_) {}
         }
         this._armedTimers.clear();
+        this.closeSubmenu();
         this._dropMirrors();
     }
 
@@ -191,18 +195,52 @@ export const QuickHub = GObject.registerClass({
         return more;
     }
 
-    /* GNOME's Quick Settings menu still works with the top bar slid off
-       screen; it pops up at the top-right corner. Open it, then the item's
-       own submenu (Wi-Fi networks, Bluetooth devices, power modes, output). */
+    /* Show the item's own submenu (Wi-Fi networks, Bluetooth devices, power
+       modes, output) inside the Quick tab. Its box is borrowed from GNOME's
+       hidden menu and handed back on close. The menu is marked open so Wi-Fi
+       scans, and picking an item closes it like in GNOME. */
     openSubmenu(item) {
-        const qs = Main.panel.statusArea.quickSettings;
-        if (!qs?.menu || !item?.menu) return;
-        this.emit('request-collapse');
-        qs.menu.open();
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            if (qs.menu.isOpen) item.menu.open(true);
-            return GLib.SOURCE_REMOVE;
+        if (!item?.menu) return;
+        this.closeSubmenu();
+        const menu = item.menu;
+        menu.isOpen = true;
+        menu.emit('open-state-changed', true);
+        const closedId = menu.connect('open-state-changed', (_m, open) => {
+            if (!open) { this.closeSubmenu(); this.emit('updated'); }
         });
+        this._submenu = {item, closedId};
+        this.emit('show-submenu');
+    }
+
+    closeSubmenu() {
+        const s = this._submenu;
+        if (!s) return;
+        this._submenu = null;
+        const menu = s.item.menu;
+        menu.disconnect(s.closedId);
+        menu.box.get_parent()?.remove_child(menu.box);
+        menu.actor.add_child(menu.box);
+        if (menu.isOpen) { menu.isOpen = false; menu.emit('open-state-changed', false); }
+    }
+
+    _buildSubmenu() {
+        const {box} = this._submenu.item.menu;
+        const view = new St.BoxLayout({style_class: 'nexnotch-quick-submenu', vertical: true, x_expand: true});
+        const back = new St.Button({
+            style_class: 'nexnotch-quick-back', can_focus: true, accessible_name: 'Back',
+            x_align: Clutter.ActorAlign.START,
+            child: new St.Icon({icon_name: 'go-previous-symbolic', style_class: 'nexnotch-quick-back-icon'}),
+        });
+        back.connect('clicked', () => { this.closeSubmenu(); this.emit('updated'); });
+        view.add_child(back);
+        const holder = new St.Bin({x_expand: true});
+        box.get_parent()?.remove_child(box);
+        box.opacity = 255;   // GNOME's close() leaves it faded out
+        holder.set_child(box);
+        view.add_child(holder);
+        // take the box out before the holder's destroy would take it along
+        this._mirror(holder, () => { if (box.get_parent() === holder) holder.remove_child(box); });
+        return view;
     }
 
     /* the volume slider, whose submenu picks the audio output */
@@ -210,95 +248,36 @@ export const QuickHub = GObject.registerClass({
         return Main.panel.statusArea.quickSettings?._volumeOutput?.quickSettingsItems?.[0] ?? null;
     }
 
+    /* No subprocesses here: forking the shell stalls it ~9 ms per spawn.
+       Mic and camera come from GNOME's own privacy indicators, device
+       batteries from UPower over D-Bus. */
     async _refresh() {
         try {
-            this._mic = await this._anyAppUsing('Audio/Source');
-            this._cam = await this._anyCameraUsing();
+            const qs = Main.panel.statusArea.quickSettings;
+            this._mic = !!qs?._volumeInput?._indicator?.visible;
+            this._cam = !!qs?._camera?._indicator?.visible;
             this._btDevices = await this._btBatteries();
             this._kbLayout  = this._currentLayout();
             this.emit('updated');
         } catch (e) { logError(e, 'nexnotch:quick:refresh'); }
     }
 
-    async _anyAppUsing(_role) {
-        return await new Promise(resolve => {
-            if (!GLib.find_program_in_path('pactl')) { resolve(false); return; }
-            try {
-                const proc = Gio.Subprocess.new(
-                    ['pactl', '-f', 'json', 'list', 'source-outputs'],
-                    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE,
-                );
-                proc.communicate_utf8_async(null, null, (p, res) => {
-                    try {
-                        const [, out] = p.communicate_utf8_finish(res);
-                        const data = JSON.parse(out || '[]');
-                        resolve(Array.isArray(data) && data.length > 0);
-                    } catch (_) { resolve(false); }
-                });
-            } catch (_) { resolve(false); }
-        });
-    }
-
-    async _anyCameraUsing() {
-        /* Avoid `sh -c` entirely — enumerate /dev/video* ourselves and spawn
-           fuser directly with an explicit absolute path. Portable and the
-           spawn matches the guarded binary. */
-        const fuserPath = GLib.find_program_in_path('fuser');
-        if (!fuserPath) return false;
-        const devs = [];
-        try {
-            const dir = Gio.File.new_for_path('/dev');
-            const iter = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
-            let info;
-            while ((info = iter.next_file(null))) {
-                const n = info.get_name();
-                if (/^video\d+$/.test(n)) devs.push(`/dev/${n}`);
-            }
-        } catch (_) { return false; }
-        if (devs.length === 0) return false;
-        return new Promise(resolve => {
-            try {
-                const proc = Gio.Subprocess.new(
-                    [fuserPath, ...devs],
-                    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE,
-                );
-                proc.communicate_utf8_async(null, null, (p, res) => {
-                    try {
-                        const [, out] = p.communicate_utf8_finish(res);
-                        resolve(out.trim().length > 0);
-                    } catch (_) { resolve(false); }
-                });
-            } catch (_) { resolve(false); }
-        });
-    }
-
     async _btBatteries() {
-        return await new Promise(resolve => {
-            if (!GLib.find_program_in_path('upower')) { resolve([]); return; }
-            try {
-                const proc = Gio.Subprocess.new(
-                    ['upower', '-d'],
-                    Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE,
-                );
-                proc.communicate_utf8_async(null, null, (p, res) => {
-                    try {
-                        const [, out] = p.communicate_utf8_finish(res);
-                        const devs = [];
-                        const blocks = out.split(/\n\s*\n/);
-                        for (const b of blocks) {
-                            if (!/model:/i.test(b)) continue;
-                            if (!/battery/i.test(b) && !/headset|headphones|keyboard|mouse|phone/i.test(b)) continue;
-                            const model = (b.match(/model:\s+([^\n]+)/) || [])[1];
-                            const pctRaw = (b.match(/percentage:\s+(\d+)/) || [])[1];
-                            const pct   = Number(pctRaw);
-                            /* keep 0% devices — they're the ones that need alerting */
-                            if (model && Number.isFinite(pct)) devs.push({model: model.trim(), pct});
-                        }
-                        resolve(devs);
-                    } catch (_) { resolve([]); }
+        const call = (path, iface, method, args, type) => new Promise((resolve, reject) => {
+            Gio.DBus.system.call('org.freedesktop.UPower', path, iface, method, args,
+                new GLib.VariantType(type), Gio.DBusCallFlags.NONE, 2000, null, (conn, res) => {
+                    try { resolve(conn.call_finish(res).deepUnpack()[0]); } catch (e) { reject(e); }
                 });
-            } catch (_) { resolve([]); }
         });
+        try {
+            const paths = await call('/org/freedesktop/UPower', 'org.freedesktop.UPower', 'EnumerateDevices', null, '(ao)');
+            const all = await Promise.all(paths.map(path => call(path, 'org.freedesktop.DBus.Properties', 'GetAll',
+                new GLib.Variant('(s)', ['org.freedesktop.UPower.Device']), '(a{sv})')));
+            return all
+                .map(p => ({type: p.Type?.unpack(), model: p.Model?.unpack()?.trim(), pct: p.Percentage?.unpack()}))
+                .filter(d => d.type !== 1 && d.model && Number.isFinite(d.pct))   // 1 = line power
+                .map(({model, pct}) => ({model, pct: Math.round(pct)}));
+        } catch (_) { return []; }
     }
 
     _currentLayout() {
@@ -315,6 +294,10 @@ export const QuickHub = GObject.registerClass({
         const box = new St.BoxLayout({style_class: 'nexnotch-quick', vertical: true, x_expand: true, y_expand: true});
 
         this._dropMirrors(); // the previous render's widgets are gone
+        if (this._submenu) {
+            box.add_child(this._buildSubmenu());
+            return box;
+        }
         box.add_child(this._buildSliders());
         box.add_child(this._buildToggles());
 

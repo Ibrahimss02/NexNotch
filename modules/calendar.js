@@ -69,12 +69,6 @@ export const CalendarPeek = GObject.registerClass({
         this._stopped = false;
         this._startCalendar();
         _loadEdsBindings();
-        this._refreshTasks();
-        this._tasksTimer = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 600, () => {
-            if (this._stopped) return GLib.SOURCE_REMOVE;
-            this._refreshTasks();
-            return GLib.SOURCE_CONTINUE;
-        });
     }
 
     stop() {
