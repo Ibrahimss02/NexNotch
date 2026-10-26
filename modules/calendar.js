@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 import Soup from 'gi://Soup?version=3.0';
 
 import {getAccessToken, listGoogleAccounts} from './goa.js';
@@ -284,35 +285,40 @@ export const CalendarPeek = GObject.registerClass({
     }
 
     _renderCalendar() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-cal', vertical: true, x_expand: true, y_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-cal', x_expand: true});
+        box.add_child(this._monthGrid());
 
-        const layout = new St.BoxLayout({style_class: 'nexnotch-cal-layout', x_expand: true, y_expand: true});
-        layout.add_child(this._monthGrid());
-
-        const agenda = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true, style_class: 'nexnotch-cal-agenda'});
+        const agenda = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-card nexnotch-cal-agenda'});
+        agenda.add_child(new St.Label({text: 'UP NEXT', style_class: 'nexnotch-caps'}));
         const events = this._filterEvents(this._events).filter(ev => ev.end * 1000 >= Date.now());
         if (events.length === 0) {
-            agenda.add_child(new St.Label({
-                text: 'No upcoming events',
-                style_class: 'nexnotch-empty',
-                x_align: Clutter.ActorAlign.CENTER,
-            }));
+            const empty = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true, style_class: 'nexnotch-cal-empty',
+                y_align: Clutter.ActorAlign.CENTER});
+            empty.add_child(new St.Icon({icon_name: 'x-office-calendar-symbolic', style_class: 'nexnotch-cal-empty-icon', x_align: Clutter.ActorAlign.CENTER}));
+            empty.add_child(new St.Label({text: 'No more events today', style_class: 'nexnotch-cal-empty-title', x_align: Clutter.ActorAlign.CENTER}));
+            const hint = new St.Label({text: 'Events from your connected calendars show here.', style_class: 'nexnotch-muted', x_align: Clutter.ActorAlign.CENTER});
+            hint.clutter_text.line_wrap = true;
+            hint.clutter_text.line_alignment = Pango.Alignment.CENTER;
+            empty.add_child(hint);
+            agenda.add_child(empty);
         } else {
-            const scroll = new St.ScrollView({style_class: 'nexnotch-cal-agenda-scroll', x_expand: true, y_expand: true});
-            const inner = new St.BoxLayout({vertical: true, x_expand: true});
+            const scroll = new St.ScrollView({style_class: 'nexnotch-cal-agenda-scroll', x_expand: true, y_expand: true,
+                hscrollbar_policy: St.PolicyType.NEVER, overlay_scrollbars: true});
+            const inner = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-cal-rows'});
             for (const ev of events.slice(0, 24)) inner.add_child(this._eventRow(ev));
             scroll.set_child(inner);
             agenda.add_child(scroll);
         }
-        layout.add_child(agenda);
-        box.add_child(layout);
+        box.add_child(agenda);
         return box;
     }
 
     _eventRow(ev) {
         const row = new St.BoxLayout({style_class: 'nexnotch-cal-row'});
-        row.add_child(new St.Label({text: this._formatTime(ev), style_class: 'nexnotch-cal-when'}));
-        row.add_child(new St.Label({text: ev.summary, style_class: 'nexnotch-cal-title', x_expand: true}));
+        row.add_child(new St.Label({text: this._formatTime(ev), style_class: 'nexnotch-cal-when', y_align: Clutter.ActorAlign.CENTER}));
+        const title = new St.Label({text: ev.summary, style_class: 'nexnotch-cal-title', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        row.add_child(title);
         return row;
     }
 
@@ -332,43 +338,50 @@ export const CalendarPeek = GObject.registerClass({
             if (d.getFullYear() === year && d.getMonth() === month) eventDays.add(d.getDate());
         }
 
-        const grid = new St.BoxLayout({style_class: 'nexnotch-cal-month', vertical: true});
-
+        const grid = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-cal-month', vertical: true});
         const header = new St.BoxLayout({style_class: 'nexnotch-cal-month-header', x_expand: true});
-        const prevBtn = new St.Button({style_class: 'nexnotch-cal-month-nav', label: '‹', accessible_name: 'Previous month'});
-        prevBtn.connect('clicked', () => { this._calMonthOffset = offset - 1; this.emit('updated'); });
-        header.add_child(prevBtn);
-        header.add_child(new St.Label({
-            text: viewDate.toLocaleDateString([], {month: 'long', year: 'numeric'}),
-            style_class: 'nexnotch-cal-month-title',
-            x_expand: true,
-            x_align: Clutter.ActorAlign.CENTER,
-        }));
-        const nextBtn = new St.Button({style_class: 'nexnotch-cal-month-nav', label: '›', accessible_name: 'Next month'});
-        nextBtn.connect('clicked', () => { this._calMonthOffset = offset + 1; this.emit('updated'); });
-        header.add_child(nextBtn);
+        const title = new St.Label({style_class: 'nexnotch-cal-month-name', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        title.clutter_text.set_markup(`${GLib.markup_escape_text(viewDate.toLocaleDateString([], {month: 'long'}), -1)} <span foreground="#FFFFFF">${year}</span>`);
+        header.add_child(title);
+        const nav = (icon, step, name) => {
+            const b = new St.Button({style_class: 'nexnotch-cal-nav', child: new St.Icon({icon_name: icon}), accessible_name: name, can_focus: true});
+            b.connect('clicked', () => { this._calMonthOffset = offset + step; this.emit('updated'); });
+            return b;
+        };
+        header.add_child(nav('go-previous-symbolic', -1, 'Previous month'));
+        header.add_child(nav('go-next-symbolic', 1, 'Next month'));
         grid.add_child(header);
 
-        const dow = new St.BoxLayout({style_class: 'nexnotch-cal-dow', x_expand: true});
-        for (const d of ['M', 'T', 'W', 'T', 'F', 'S', 'S']) {
-            dow.add_child(new St.Label({text: d, style_class: 'nexnotch-cal-dow-cell', x_align: Clutter.ActorAlign.CENTER, x_expand: true}));
-        }
+        const week = () => {
+            const w = new St.BoxLayout({style_class: 'nexnotch-cal-week', x_expand: true});
+            w.layout_manager.homogeneous = true;
+            return w;
+        };
+        const dow = week();
+        for (const d of ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+            dow.add_child(new St.Label({text: d, style_class: 'nexnotch-cal-dow', x_expand: true}));
         grid.add_child(dow);
 
-        let row = new St.BoxLayout({style_class: 'nexnotch-cal-week', x_expand: true});
-        for (let i = 0; i < startWeekday; i++) row.add_child(new St.Widget({x_expand: true}));
+        let row = week();
+        for (let i = 0; i < startWeekday; i++) row.add_child(new St.Widget({style_class: 'nexnotch-cal-cell'}));
         let col = startWeekday;
         for (let day = 1; day <= daysInMonth; day++) {
-            const isToday = isCurrentMonth && day === now.getDate();
-            const hasEvent = eventDays.has(day);
-            let cls = 'nexnotch-cal-day-cell';
-            if (hasEvent) cls += ' has-event'; else cls += ' no-event';
-            if (isToday) cls += ' today';
-            row.add_child(new St.Label({text: String(day), style_class: cls, x_align: Clutter.ActorAlign.CENTER, x_expand: true}));
-            col++;
-            if (col === 7) { grid.add_child(row); row = new St.BoxLayout({style_class: 'nexnotch-cal-week', x_expand: true}); col = 0; }
+            const cell = new St.BoxLayout({style_class: 'nexnotch-cal-cell', vertical: true});
+            /* the circle is a Bin so the number can be centred in it both ways */
+            const num = new St.Bin({style_class: 'nexnotch-cal-day', x_align: Clutter.ActorAlign.CENTER,
+                child: new St.Label({text: String(day), x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER})});
+            if (isCurrentMonth && day === now.getDate()) num.add_style_class_name('today');
+            cell.add_child(num);
+            const dot = new St.Widget({style_class: 'nexnotch-cal-dot', x_align: Clutter.ActorAlign.CENTER});
+            dot.opacity = eventDays.has(day) ? 255 : 0;
+            cell.add_child(dot);
+            row.add_child(cell);
+            if (++col === 7) { grid.add_child(row); row = week(); col = 0; }
         }
-        if (col > 0) grid.add_child(row);
+        if (col > 0) {
+            for (; col < 7; col++) row.add_child(new St.Widget({style_class: 'nexnotch-cal-cell'}));
+            grid.add_child(row);
+        }
         return grid;
     }
 

@@ -27,28 +27,31 @@ GNOME's top bar is wasted space. macOS turned its notch into a Dynamic Island. N
 
 ## What's inside the notch
 
-Hover the pill (or press `Super + N`). **Swipe left/right with two fingers** on the touchpad to move between tabs — a long swipe or a quick flick runs through several. A horizontal mouse wheel or `Shift` + wheel also works, and the dots under the clock are clickable. The notch reopens on the last tab you used.
+Hover the pill (or press `Super + N`). **Swipe left/right with two fingers** on the touchpad to move between tabs — a long swipe or a quick flick runs through several. A horizontal mouse wheel or `Shift` + wheel also works, and the page dots at the bottom are clickable. The notch reopens on the last tab you used.
 
 | Tab | What it does |
 |---|---|
-| **Notifs** | Music player (album art, wavy seek bar, shuffle/repeat, synced lyrics, output picker) above GNOME's notification history. |
+| **Notifs** | Now Playing card tinted from the album art (seek bar, shuffle/repeat, synced lyrics, output picker) above GNOME's notification history. |
 | **System** | Live CPU, RAM, swap, network, disk I/O, CPU temperature, load, uptime, battery time remaining. |
 | **Limits** | Claude Code usage rings. |
 | **Calendar** | Google Calendar month view and agenda through GNOME Online Accounts — no extra login. |
 | **Notes** | Quick notes, autosaved. |
+| **Shelf** | Drag files onto the notch to keep them at hand. Click one to open it, or copy it to paste anywhere. |
 | **Weather** | Dual-location weather (wttr.in). |
 | **Timer** | Pomodoro with presets. |
-| **Quick** | GNOME's own Quick Settings — volume and brightness sliders, Wi-Fi, Bluetooth, power mode, dark style, night light… — with their submenus (Wi-Fi networks, Bluetooth devices, audio output) opening right inside the notch. Mic/camera/Bluetooth battery status and two-tap power actions. |
+| **Water** | Cups drunk today against your goal, an hourly chart, and drink-water reminders. |
+| **Quick** | GNOME's own Quick Settings — volume and brightness sliders, Wi-Fi, Bluetooth, power mode, dark style, night light… Click a name with a › to open its list (Wi-Fi networks, Bluetooth devices, audio output) right inside the notch. Mic/camera/battery status and two-tap power actions. |
 
 **Peeks** — the notch briefly opens for:
 
 - **Notifications** — hover to read the whole thing, click to open, ✕ to dismiss
 - **Now playing** — when a track starts or changes (album art works for Spotify too)
 - **Volume, brightness and keyboard backlight** — replaces GNOME's OSD popup with a slim bar in the notch
-- **Charger** plugged in / unplugged, with time to full / empty
-- **Drink water** — a little cup in the pill drains like an hourglass (default every 10 minutes); when it's empty you get a reminder and it refills
+- **Charger** plugged in / unplugged
+- **Drink water** — every 10 minutes by default, with a **Drink** button right on the reminder
+- **Shelf** — drag a file near the notch and it becomes a drop target; after a drop it confirms, and the next open shows the Shelf
 
-The collapsed pill also shows the playing track, battery, a screen-recording indicator (click to stop) and the Pomodoro countdown.
+The collapsed pill shows battery, the time and date, a live waveform while music plays, the Pomodoro countdown and a screen-recording indicator (click to stop).
 
 ---
 
@@ -154,7 +157,10 @@ nexnotch@nexvar/
 │   ├── history.js         # GNOME notification history
 │   ├── notifications.js   # notification peek
 │   ├── power.js           # charger plug/unplug (UPower)
-│   ├── water.js           # drink-water timer + cup
+│   ├── water.js           # drink-water reminder + cup log
+│   ├── shelf.js           # file shelf + drag-and-drop target
+│   ├── dropzone.js        # tiny GTK helper that receives drops (see below)
+│   ├── ui.js              # shared drawn widgets: battery, waveform, ring
 │   ├── quick.js           # mirrors GNOME Quick Settings
 │   ├── calendar.js        # Google Calendar via GOA
 │   ├── notes.js           # notes
@@ -164,6 +170,7 @@ nexnotch@nexvar/
 │   └── goa.js             # GNOME Online Accounts helper
 ├── prefs.js               # Adwaita preferences window
 ├── schemas/…gschema.xml
+├── icons/                 # the water-cup icon
 └── stylesheet.css
 ```
 
@@ -173,13 +180,14 @@ nexnotch@nexvar/
 
 - **Wayland needs a log out / log in** after installing or updating — GNOME can't reload extension code in a running session.
 - **Lyrics** are off until you press *Lyrics* on the player; turning them on sends the track name to [lrclib.net](https://lrclib.net).
+- **Shelf drag-and-drop:** on Wayland GNOME Shell can't receive dropped files itself, so while you drag, NexNotch briefly runs an invisible helper window (`modules/dropzone.js`, GJS + GTK 4) over the notch to catch the drop. Dragging files *out* of the shelf isn't possible; use click to open or Copy.
 - **Evolution Data Server** sometimes doesn't auto-start; `extension.js` starts `evolution-source-registry` once at enable as a workaround.
 
 ---
 
 ## Dependencies
 
-Nothing beyond a standard GNOME desktop (GNOME Shell 46+, GLib, GTK 4, libadwaita, libsoup 3). Calendar uses GNOME Online Accounts; weather and lyrics use the network only when enabled.
+Nothing beyond a standard GNOME desktop (GNOME Shell 46+, GJS, GLib, GTK 4, libadwaita, libsoup 3). Calendar uses GNOME Online Accounts; weather and lyrics use the network only when enabled.
 
 ---
 

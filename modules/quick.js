@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+import Pango from 'gi://Pango';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickToggle, QuickMenuToggle, QuickSlider} from 'resource:///org/gnome/shell/ui/quickSettings.js';
@@ -107,22 +108,34 @@ export const QuickHub = GObject.registerClass({
         for (const item of this._systemItems()) {
             if (!(item instanceof QuickSlider)) continue;
             const row = new St.BoxLayout({style_class: 'nexnotch-quick-slider-row', x_expand: true});
-            const icon = new St.Icon({style_class: 'nexnotch-quick-slider-icon', y_align: Clutter.ActorAlign.CENTER});
+            /* a full-height pill: the white fill is the level, the icon sits inside it */
+            const pill = new St.Widget({layout_manager: new Clutter.BinLayout(), x_expand: true});
             const slider = new Slider(item.slider.value);
-            row.add_child(icon);
-            row.add_child(slider);
+            slider.add_style_class_name('nexnotch-quick-slider');
+            slider.x_expand = true;
+            slider.accessible_name = item.slider.accessible_name ?? '';
+            const icon = new St.Icon({style_class: 'nexnotch-quick-slider-icon', x_expand: true, y_expand: true,
+                x_align: Clutter.ActorAlign.START, y_align: Clutter.ActorAlign.CENTER});
+            pill.add_child(slider);
+            pill.add_child(icon);
+            row.add_child(pill);
             if (item.menu) row.add_child(this._moreButton(item, 'nexnotch-quick-slider-more'));   // e.g. audio output
             box.add_child(row);
 
-            const sync = () => this._syncIcon(icon, item);
+            const sync = () => {
+                this._syncIcon(icon, item);
+                icon.set_style(`color: ${slider.value > 0.1 ? '#000000' : '#A1A1A6'};`);
+            };
             sync();
             // both ways: dragging here moves GNOME's slider, which changes the real volume/brightness
             const binding = item.slider.bind_property('value', slider, 'value',
                 GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE);
-            const ids = ['notify::gicon', 'notify::icon-name'].map(s => item.connect(s, sync));
+            const ids = ['notify::gicon', 'notify::icon-name'].map(sig => item.connect(sig, sync));
+            const valueId = slider.connect('notify::value', sync);
             this._mirror(row, () => {
                 binding.unbind();
                 ids.forEach(id => item.disconnect(id));
+                slider.disconnect(valueId);
             });
         }
         return box;
@@ -137,45 +150,121 @@ export const QuickHub = GObject.registerClass({
         this._mirrorCleanups.push(once);
     }
 
+    /* Toggles with a submenu (Wi-Fi, Bluetooth, power mode…) go in one big
+       card with their status; the rest are small tiles beside it. */
     _buildToggles() {
-        const row = new St.BoxLayout({style_class: 'nexnotch-quick-toggles', x_expand: true, x_align: Clutter.ActorAlign.CENTER});
-        for (const item of this._systemItems()) {
-            if (!(item instanceof QuickToggle || item instanceof QuickMenuToggle)) continue;
-            const icon = new St.Icon({style_class: 'nexnotch-quick-toggle-icon'});
-            const btn = new St.Button({
-                style_class: 'nexnotch-quick-toggle', child: icon, can_focus: true,
-                button_mask: St.ButtonMask.ONE | St.ButtonMask.THREE,   // right-click opens the submenu
-            });
-            const sync = () => {
-                this._syncIcon(icon, item);
-                btn.accessible_name = item.title ?? '';
-                if (item.checked) btn.add_style_pseudo_class('checked');
-                else btn.remove_style_pseudo_class('checked');
-            };
-            sync();
-            btn.connect('clicked', (_b, button) => {
-                if (button === Clutter.BUTTON_SECONDARY && item.menu && item.menuEnabled !== false)
-                    this.openSubmenu(item);
-                else if (button !== Clutter.BUTTON_SECONDARY)
-                    item.emit('clicked', 1);
-            });
-            const ids = ['notify::checked', 'notify::gicon', 'notify::icon-name', 'notify::title']
-                .map(s => item.connect(s, sync));
-            this._mirror(btn, () => ids.forEach(id => item.disconnect(id)));
-            row.add_child(item.menu ? this._withBadge(btn, item) : btn);
-        }
-        return row;
+        const area = new St.BoxLayout({style_class: 'nexnotch-quick-grid', x_expand: true});
+        /* top-aligned: the two groups can differ in height and neither should stretch */
+        const big = new St.BoxLayout({style_class: 'nexnotch-quick-big', vertical: true, x_expand: true, y_align: Clutter.ActorAlign.START});
+        const small = new St.BoxLayout({style_class: 'nexnotch-quick-smalls', vertical: true, x_expand: true, y_align: Clutter.ActorAlign.START});
+        const items = this._systemItems().filter(i => i instanceof QuickToggle || i instanceof QuickMenuToggle);
+        const withMenu = items.filter(i => i.menu).slice(0, 4);
+        const rest = items.filter(i => !withMenu.includes(i));
+
+        let row = null;
+        withMenu.forEach((item, i) => {
+            if (i % 2 === 0) {
+                big.add_child(row = new St.BoxLayout({style_class: 'nexnotch-quick-big-row', x_expand: true}));
+                row.layout_manager.homogeneous = true;
+            }
+            row.add_child(this._bigToggle(item));
+        });
+        const tiles = rest.map(item => this._smallToggle(item));
+        tiles.push(this._layoutTile());
+        tiles.forEach((tile, i) => {
+            if (i % 2 === 0) {
+                small.add_child(row = new St.BoxLayout({style_class: 'nexnotch-quick-small-row', x_expand: true}));
+                row.layout_manager.homogeneous = true;
+            }
+            row.add_child(tile);
+        });
+        if (withMenu.length) area.add_child(big);
+        area.add_child(small);
+        return area;
     }
 
-    /* toggle + small ▾ badge in its corner that opens the submenu */
-    _withBadge(btn, item) {
-        const wrap = new St.Widget({layout_manager: new Clutter.BinLayout()});
-        wrap.add_child(btn);
-        wrap.add_child(this._moreButton(item, 'nexnotch-quick-badge', {
-            x_expand: true, y_expand: true,
-            x_align: Clutter.ActorAlign.END, y_align: Clutter.ActorAlign.END,
-        }));
-        return wrap;
+    /* Toggle-mode items (Night Light, Do Not Disturb) flip their own
+       `checked` on a real click and bind the setting to it, so a bare
+       'clicked' does nothing for them; others act on 'clicked'. */
+    _activate(item) {
+        if (item.toggle_mode) item.checked = !item.checked;
+        item.emit('clicked', 1);
+    }
+
+    _watch(item, actor, sync) {
+        sync();
+        const ids = ['notify::checked', 'notify::gicon', 'notify::icon-name', 'notify::title', 'notify::subtitle', 'notify::menu-enabled']
+            .map(sig => item.connect(sig, sync));
+        this._mirror(actor, () => ids.forEach(id => item.disconnect(id)));
+    }
+
+    _bigToggle(item) {
+        const box = new St.BoxLayout({style_class: 'nexnotch-quick-big-item', x_expand: true});
+        const icon = new St.Icon({style_class: 'nexnotch-quick-big-icon'});
+        const disc = new St.Button({style_class: 'nexnotch-quick-disc', child: icon, can_focus: true, y_align: Clutter.ActorAlign.CENTER});
+        disc.connect('clicked', () => this._activate(item));
+        const text = new St.BoxLayout({vertical: true, x_expand: true});
+        const title = new St.Label({style_class: 'nexnotch-quick-big-title'});
+        const sub = new St.Label({style_class: 'nexnotch-quick-big-sub'});
+        title.clutter_text.ellipsize = sub.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        text.add_child(title);
+        text.add_child(sub);
+        /* the circle toggles; the label and chevron open the item's list */
+        const labelBox = new St.BoxLayout({x_expand: true});
+        labelBox.add_child(text);
+        const chevron = new St.Icon({icon_name: 'go-next-symbolic', style_class: 'nexnotch-quick-chevron', y_align: Clutter.ActorAlign.CENTER});
+        labelBox.add_child(chevron);
+        const label = new St.Button({style_class: 'nexnotch-quick-big-label', child: labelBox, x_expand: true, can_focus: true,
+            y_align: Clutter.ActorAlign.CENTER});
+        label.connect('clicked', () => {
+            if (item.menu && item.menuEnabled !== false) this.openSubmenu(item);
+            else this._activate(item);
+        });
+        box.add_child(disc);
+        box.add_child(label);
+        this._watch(item, box, () => {
+            this._syncIcon(icon, item);
+            title.text = item.title ?? '';
+            sub.text = item.subtitle || (item.checked ? 'On' : 'Off');
+            disc.accessible_name = item.title ?? '';
+            label.accessible_name = `${item.title ?? ''} options`;
+            chevron.visible = !!item.menu && item.menuEnabled !== false;
+            if (item.checked) disc.add_style_pseudo_class('checked');
+            else disc.remove_style_pseudo_class('checked');
+        });
+        return box;
+    }
+
+    _smallToggle(item) {
+        const icon = new St.Icon({style_class: 'nexnotch-quick-small-icon', x_align: Clutter.ActorAlign.START});
+        const title = new St.Label({style_class: 'nexnotch-quick-small-title'});
+        title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
+        const col = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true});
+        col.add_child(icon);
+        col.add_child(new St.Widget({y_expand: true}));
+        col.add_child(title);
+        const btn = new St.Button({style_class: 'nexnotch-quick-small', child: col, can_focus: true, x_expand: true,
+            button_mask: St.ButtonMask.ONE | St.ButtonMask.THREE});   // right-click opens a submenu if any
+        btn.connect('clicked', (_b, button) => {
+            if (button === Clutter.BUTTON_SECONDARY && item.menu && item.menuEnabled !== false) this.openSubmenu(item);
+            else if (button !== Clutter.BUTTON_SECONDARY) this._activate(item);
+        });
+        this._watch(item, btn, () => {
+            this._syncIcon(icon, item);
+            title.text = item.title ?? '';
+            btn.accessible_name = item.title ?? '';
+            if (item.checked) btn.add_style_pseudo_class('checked');
+            else btn.remove_style_pseudo_class('checked');
+        });
+        return btn;
+    }
+
+    _layoutTile() {
+        const col = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true});
+        col.add_child(new St.Icon({icon_name: 'input-keyboard-symbolic', style_class: 'nexnotch-quick-small-icon', x_align: Clutter.ActorAlign.START}));
+        col.add_child(new St.Widget({y_expand: true}));
+        col.add_child(new St.Label({text: `Layout · ${this._kbLayout || '—'}`, style_class: 'nexnotch-quick-small-title'}));
+        return new St.Bin({style_class: 'nexnotch-quick-small', child: col, x_expand: true});
     }
 
     _moreButton(item, styleClass, params = {}) {
@@ -291,7 +380,7 @@ export const QuickHub = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-quick', vertical: true, x_expand: true, y_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-quick', vertical: true, x_expand: true});
 
         this._dropMirrors(); // the previous render's widgets are gone
         if (this._submenu) {
@@ -301,17 +390,15 @@ export const QuickHub = GObject.registerClass({
         box.add_child(this._buildSliders());
         box.add_child(this._buildToggles());
 
-        /* status pills — mic/cam/layout plus Bluetooth batteries, one centered row */
-        const statusRow = new St.BoxLayout({style_class: 'nexnotch-quick-row', x_align: Clutter.ActorAlign.CENTER});
-        statusRow.add_child(this._pill('Mic',    this._mic  ? 'on'  : 'off', this._mic));
-        statusRow.add_child(this._pill('Camera', this._cam  ? 'on'  : 'off', this._cam));
-        statusRow.add_child(this._pill('Layout', this._kbLayout || '—', false));
+        const chips = new St.BoxLayout({style_class: 'nexnotch-quick-chips', x_align: Clutter.ActorAlign.CENTER});
+        chips.add_child(this._pill(this._mic ? 'Mic in use' : 'Mic off', this._mic ? 'audio-input-microphone-symbolic' : 'microphone-disabled-symbolic', this._mic));
+        chips.add_child(this._pill(this._cam ? 'Camera in use' : 'Camera off', this._cam ? 'camera-web-symbolic' : 'camera-disabled-symbolic', this._cam));
         for (const d of this._btDevices) {
-            const p = this._pill(d.model, `${d.pct}%`, false);
-            if (d.pct < 20) p.add_style_class_name('low');
-            statusRow.add_child(p);
+            const p = this._pill(`${d.model} · ${d.pct}%`, 'battery-symbolic', false);
+            p.add_style_class_name(d.pct < 20 ? 'low' : 'device');
+            chips.add_child(p);
         }
-        box.add_child(statusRow);
+        box.add_child(chips);
 
         const actions = new St.BoxLayout({style_class: 'nexnotch-quick-actions', x_align: Clutter.ActorAlign.CENTER});
         /* Lock and Suspend are safe one-click; Log out / Reboot / Shutdown
@@ -321,23 +408,24 @@ export const QuickHub = GObject.registerClass({
         actions.add_child(this._actionButton('Suspend', 'weather-clear-night-symbolic', () => this._run(['systemctl', 'suspend'])));
         actions.add_child(this._armedActionButton('Log out',  'system-log-out-symbolic',  ['gnome-session-quit', '--logout', '--no-prompt']));
         actions.add_child(this._armedActionButton('Reboot',   'system-reboot-symbolic',   ['systemctl', 'reboot']));
-        actions.add_child(this._armedActionButton('Shutdown', 'system-shutdown-symbolic', ['systemctl', 'poweroff']));
+        const off = this._armedActionButton('Shutdown', 'system-shutdown-symbolic', ['systemctl', 'poweroff']);
+        off.add_style_class_name('danger');
+        actions.add_child(off);
         box.add_child(actions);
-
         return box;
     }
 
-    _pill(label, value, active) {
-        const p = new St.BoxLayout({style_class: 'nexnotch-quick-pill' + (active ? ' active' : '')});
-        p.add_child(new St.Label({text: label, style_class: 'nexnotch-quick-pill-label'}));
-        p.add_child(new St.Label({text: value, style_class: 'nexnotch-quick-pill-value'}));
+    _pill(text, iconName, active) {
+        const p = new St.BoxLayout({style_class: 'nexnotch-quick-chip' + (active ? ' active' : '')});
+        p.add_child(new St.Icon({icon_name: iconName, style_class: 'nexnotch-quick-chip-icon', y_align: Clutter.ActorAlign.CENTER}));
+        p.add_child(new St.Label({text, y_align: Clutter.ActorAlign.CENTER}));
         return p;
     }
 
     _actionButton(label, iconName, cb) {
         const b = new St.Button({
-            style_class: 'nexnotch-quick-toggle nexnotch-quick-power',
-            child: new St.Icon({icon_name: iconName, style_class: 'nexnotch-quick-toggle-icon'}),
+            style_class: 'nexnotch-quick-power',
+            child: new St.Icon({icon_name: iconName, style_class: 'nexnotch-quick-power-icon'}),
             accessible_name: label,
             can_focus: true,
         });
@@ -346,9 +434,9 @@ export const QuickHub = GObject.registerClass({
     }
 
     _armedActionButton(label, iconName, argv) {
-        const icon = new St.Icon({icon_name: iconName, style_class: 'nexnotch-quick-toggle-icon'});
+        const icon = new St.Icon({icon_name: iconName, style_class: 'nexnotch-quick-power-icon'});
         const b = new St.Button({
-            style_class: 'nexnotch-quick-toggle nexnotch-quick-power',
+            style_class: 'nexnotch-quick-power',
             child: icon,
             accessible_name: `${label} (click twice to confirm)`,
             can_focus: true,

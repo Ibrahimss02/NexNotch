@@ -8,8 +8,9 @@
     <key name="show-notifications" type="b"><default>true</default><summary>Enable dynamic notification peek</summary></key>
     <key name="show-calendar"      type="b"><default>true</default><summary>Enable Google Calendar peek</summary></key>
     <key name="show-tasks"         type="b"><default>true</default><summary>Enable Google Tasks peek</summary></key>
-    <key name="show-water"         type="b"><default>true</default><summary>Drink-water reminder (cup in the collapsed pill)</summary></key>
+    <key name="show-water"         type="b"><default>true</default><summary>Drink-water reminders</summary></key>
     <key name="water-interval"     type="i"><default>10</default><range min="1" max="120"/><summary>Minutes between drink-water reminders</summary></key>
+    <key name="water-goal"         type="i"><default>8</default><range min="1" max="30"/><summary>Daily water goal (cups)</summary></key>
     <key name="show-claude-usage"  type="b"><default>true</default><summary>Show Claude Code usage/limit tab</summary></key>
 
     <!-- clock -->
@@ -20,12 +21,13 @@
     <key name="clock-format"     type="s"><default>"24h"</default><summary>Clock format (24h / 12h)</summary></key>
 
     <!-- size -->
-    <key name="collapsed-width"  type="i"><default>240</default><range min="140" max="480"/><summary>Collapsed notch width</summary></key>
+    <key name="collapsed-width"  type="i"><default>234</default><range min="140" max="480"/><summary>Collapsed notch width</summary></key>
     <key name="collapsed-height" type="i"><default>32</default> <range min="24"  max="56"/> <summary>Collapsed notch height</summary></key>
-    <key name="expanded-width"   type="i"><default>640</default><range min="420" max="960"/><summary>Expanded notch width</summary></key>
+    <key name="expanded-width"   type="i"><default>648</default><range min="420" max="960"/><summary>Expanded notch width</summary></key>
     <key name="expanded-height"  type="i"><default>280</default><range min="200" max="480"/><summary>Expanded notch height</summary></key>
+    <key name="shelf-items"      type="as"><default>[]</default><summary>Files on the shelf (URIs)</summary></key>
     <key name="last-tab"         type="s"><default>"history"</default><summary>Tab shown when the notch expands (the last one opened)</summary></key>
-    <key name="corner-radius"    type="i"><default>20</default> <range min="0"   max="32"/> <summary>Bottom corner radius</summary></key>
+    <key name="corner-radius"    type="i"><default>40</default> <range min="0" max="60"/> <summary>Bottom corner radius</summary></key>
 
     <!-- colors (CSS rgba strings so users can use any transparency) -->
     <key name="bg-color"         type="s"><default>"rgba(0, 0, 0, 1.0)"</default><summary>Notch background color</summary></key>

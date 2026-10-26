@@ -2,6 +2,8 @@ import GObject from 'gi://GObject';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+
+import {Ring} from './ui.js';
 import Gio from 'gi://Gio';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -201,86 +203,69 @@ export const Pomodoro = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-pomo', vertical: true, x_expand: true, y_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-pomo', vertical: true, x_expand: true});
+        const {work, brk} = this._activePreset();
 
-        /* preset selector */
-        const presets = this._settings.get_strv('pomodoro-presets');
+        const seg = new St.BoxLayout({style_class: 'nexnotch-segmented', x_align: Clutter.ActorAlign.CENTER, accessible_name: 'Focus / break length'});
         const activePreset = this._settings.get_string('pomodoro-active-preset');
-        const presetRow = new St.BoxLayout({style_class: 'nexnotch-pomo-presets', x_align: Clutter.ActorAlign.CENTER});
-        for (const p of presets) {
-            const btn = new St.Button({
-                style_class: 'nexnotch-pomo-preset' + (p === activePreset ? ' active' : ''),
-                label: p,
-            });
+        for (const p of this._settings.get_strv('pomodoro-presets')) {
+            const btn = new St.Button({style_class: 'nexnotch-segment', label: p.replace('/', ' / '), can_focus: true});
+            if (p === activePreset) btn.add_style_pseudo_class('checked');
             btn.connect('clicked', () => {
                 this._settings.set_string('pomodoro-active-preset', p);
                 if (this._state !== 'idle') this.reset();
                 this.emit('state', this._state);
             });
-            presetRow.add_child(btn);
+            seg.add_child(btn);
         }
-        box.add_child(presetRow);
+        box.add_child(seg);
 
-        const RING_SIZE = 128;
-        const ringWrap = new St.Widget({
-            layout_manager: new Clutter.BinLayout(),
-            width: RING_SIZE, height: RING_SIZE,
-            x_align: Clutter.ActorAlign.CENTER,
-        });
-        const pct = this._elapsedPct();
-        const area = new St.DrawingArea({style_class: 'nexnotch-pomo-ring', width: RING_SIZE, height: RING_SIZE});
-        area.connect('repaint', () => this._paintRing(area, pct, RING_SIZE));
-        ringWrap.add_child(area);
-        const big = new St.Label({
-            text: this._state === 'idle' ? '—:—' : this.formatRemain(),
-            style_class: 'nexnotch-pomo-big',
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        ringWrap.add_child(big);
-        box.add_child(ringWrap);
+        const main = new St.BoxLayout({style_class: 'nexnotch-pomo-main', x_align: Clutter.ActorAlign.CENTER});
+        const round = (label, cls, cb) => {
+            const b = new St.Button({style_class: `nexnotch-pomo-round ${cls}`, label, can_focus: true, y_align: Clutter.ActorAlign.CENTER});
+            b.connect('clicked', cb);
+            return b;
+        };
+        main.add_child(round('Reset', '', () => this.reset()));
 
-        const stateLabel = new St.Label({
-            text: this._stateLabel(),
-            style_class: 'nexnotch-pomo-state',
-            x_align: Clutter.ActorAlign.CENTER,
-        });
-        box.add_child(stateLabel);
+        const resting = this._state === 'break' || this._state === 'longbreak' ||
+            (this._state === 'paused' && (this._prev === 'break' || this._prev === 'longbreak'));
+        const total = this._totalForState() || work * 60;
+        const frac = this._state === 'idle' ? 1 : Math.max(0, Math.min(1, this._remain / total));
+        const wrap = new St.Widget({layout_manager: new Clutter.BinLayout(), width: 189, height: 189});
+        wrap.add_child(new Ring({size: 189, thickness: 7, track: '#2C2C2E', color: resting ? '#30D158' : '#FF9F0A', frac,
+            accessibleName: `${this._stateLabel()}, ${this.formatRemain()}`}));
+        const center = new St.BoxLayout({vertical: true, x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
+        center.add_child(new St.Label({text: this._state === 'idle' ? `${String(work).padStart(2, '0')}:00` : this.formatRemain(),
+            style_class: 'nexnotch-pomo-big', x_align: Clutter.ActorAlign.CENTER}));
+        center.add_child(new St.Label({text: this._state === 'idle' ? 'Focus' : this._stateLabel(),
+            style_class: 'nexnotch-pomo-state', x_align: Clutter.ActorAlign.CENTER}));
+        wrap.add_child(center);
+        main.add_child(wrap);
 
-        const {work, brk} = this._activePreset();
-        const cyclesLabel = new St.Label({
-            text: `Cycle ${this._cycle} · ${work}/${brk}min`,
-            style_class: 'nexnotch-pomo-cycles',
-            x_align: Clutter.ActorAlign.CENTER,
-        });
-        box.add_child(cyclesLabel);
+        if (this._state === 'idle') main.add_child(round('Start', 'go', () => this.startWork()));
+        else if (this._state === 'paused') main.add_child(round('Resume', 'go', () => this.resume()));
+        else main.add_child(round('Pause', 'hold', () => this.pause()));
+        box.add_child(main);
 
-        const btns = new St.BoxLayout({style_class: 'nexnotch-pomo-btns', x_align: Clutter.ActorAlign.CENTER});
-        const startBtn = new St.Button({
-            style_class: 'nexnotch-pomo-btn primary',
-            label: this._state === 'idle' ? 'Start' : (this._state === 'paused' ? 'Resume' : 'Pause'),
-        });
-        startBtn.connect('clicked', () => {
-            if (this._state === 'idle')   this.startWork();
-            else if (this._state === 'paused') this.resume();
-            else this.pause();
-        });
-        const resetBtn = new St.Button({style_class: 'nexnotch-pomo-btn', label: 'Reset'});
-        resetBtn.connect('clicked', () => this.reset());
+        const foot = new St.BoxLayout({style_class: 'nexnotch-pomo-foot', x_align: Clutter.ActorAlign.CENTER});
+        const cycles = Math.max(1, this._settings.get_int('pomodoro-cycles'));
+        const done = this._cycle % cycles || (this._cycle && this._state !== 'work' ? cycles : 0);
+        for (let i = 0; i < cycles; i++) {
+            const dot = new St.Widget({style_class: 'nexnotch-pomo-dot', y_align: Clutter.ActorAlign.CENTER});
+            if (i < done) dot.add_style_pseudo_class('checked');
+            foot.add_child(dot);
+        }
+        foot.add_child(new St.Label({text: `Cycle ${this._cycle} of ${cycles} · ${work} min focus, ${brk} min break`,
+            style_class: 'nexnotch-pomo-cycles', y_align: Clutter.ActorAlign.CENTER}));
         if (this._state !== 'idle') {
-            const minusBtn = new St.Button({style_class: 'nexnotch-pomo-btn', label: '−1m', accessible_name: 'Subtract one minute'});
-            minusBtn.connect('clicked', () => this.adjustMinutes(-1));
-            btns.add_child(minusBtn);
+            for (const [label, delta, name] of [['−1m', -1, 'Subtract one minute'], ['+1m', 1, 'Add one minute']]) {
+                const b = new St.Button({style_class: 'nexnotch-pill-btn small', label, accessible_name: name, can_focus: true});
+                b.connect('clicked', () => this.adjustMinutes(delta));
+                foot.add_child(b);
+            }
         }
-        btns.add_child(startBtn);
-        if (this._state !== 'idle') {
-            const plusBtn = new St.Button({style_class: 'nexnotch-pomo-btn', label: '+1m', accessible_name: 'Add one minute'});
-            plusBtn.connect('clicked', () => this.adjustMinutes(1));
-            btns.add_child(plusBtn);
-        }
-        btns.add_child(resetBtn);
-        box.add_child(btns);
-
+        box.add_child(foot);
         return box;
     }
 
@@ -290,36 +275,6 @@ export const Pomodoro = GObject.registerClass({
         if (this._state === 'longbreak') return this._settings.get_int('pomodoro-long') * 60;
         if (this._state === 'break')     return brk * 60;
         return 0;
-    }
-
-    _elapsedPct() {
-        const total = this._totalForState();
-        if (total <= 0) return 0;
-        return Math.max(0, Math.min(100, 100 - (this._remain / total) * 100));
-    }
-
-    _paintRing(area, pct, size) {
-        const cr = area.get_context();
-        const thick = 7;
-        const cx = size / 2, cy = size / 2, r = size / 2 - thick / 2;
-
-        cr.setLineWidth(thick);
-        try { cr.setLineCap(1); } catch (_) {} // round caps
-
-        cr.setSourceRGBA(1, 1, 1, 0.10);
-        cr.arc(cx, cy, r, 0, 2 * Math.PI);
-        cr.stroke();
-
-        const frac = pct / 100;
-        if (frac > 0) {
-            const breakState = this._state === 'break' || this._state === 'longbreak';
-            const color = breakState ? [0.47, 0.85, 0.6] : [0.47, 0.67, 1];
-            cr.setSourceRGBA(color[0], color[1], color[2], 0.95);
-            const start = -Math.PI / 2;
-            cr.arc(cx, cy, r, start, start + frac * 2 * Math.PI);
-            cr.stroke();
-        }
-        cr.$dispose();
     }
 
     _stateLabel() {

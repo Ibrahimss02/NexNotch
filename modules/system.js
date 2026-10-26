@@ -4,6 +4,8 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
+import {BarLevel} from 'resource:///org/gnome/shell/ui/barLevel.js';
+
 const CPU_SENSORS = ['coretemp', 'k10temp', 'zenpower', 'cpu_thermal'];
 const BATTERY_REFRESH_US = 30 * 1000 * 1000;
 
@@ -349,59 +351,72 @@ export const SystemMonitor = GObject.registerClass({
         return {capacity, status, minutes, plugged};
     }
 
-    render(musicCard) {
+    render() {
         const s = this._stats;
-        const box = new St.BoxLayout({style_class: 'nexnotch-sys', vertical: true, x_expand: true, y_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-sys', vertical: true, x_expand: true});
 
-        /* headline: CPU · RAM · Uptime · Battery */
-        const headline = new St.BoxLayout({style_class: 'nexnotch-sys-headline', vertical: false, x_expand: true});
-        const hcell = (label, value, cls) => {
-            const c = new St.BoxLayout({style_class: 'nexnotch-sys-headline-cell', vertical: true, x_expand: true});
-            c.add_child(new St.Label({text: label, style_class: 'nexnotch-sys-headline-label'}));
-            const val = new St.Label({text: value, style_class: 'nexnotch-sys-headline-value'});
-            if (cls) val.add_style_class_name(cls);
-            c.add_child(val);
-            return c;
+        const grid = new St.BoxLayout({style_class: 'nexnotch-sys-grid', x_expand: true});
+        grid.layout_manager.homogeneous = true;
+        const stat = (label, value, {bar = null, color = null, sub = '', valueCls = ''} = {}) => {
+            const card = new St.BoxLayout({style_class: 'nexnotch-sys-stat', vertical: true, x_expand: true});
+            card.add_child(new St.Label({text: label, style_class: 'nexnotch-sys-stat-label'}));
+            card.add_child(new St.Label({text: value, style_class: `nexnotch-sys-stat-value ${valueCls}`}));
+            if (bar !== null) {
+                const level = new BarLevel({style_class: 'nexnotch-sys-bar', x_expand: true});
+                level.value = Math.min(1, bar / 100);
+                level.set_style(`-barlevel-active-background-color: ${color};`);
+                card.add_child(level);
+            } else {
+                card.add_child(new St.Label({text: sub, style_class: 'nexnotch-sys-stat-sub'}));
+            }
+            return card;
         };
-        const cpuClass = s.cpu > 85 ? 'danger' : (s.cpu > 65 ? 'warn' : null);
-        const ramClass = s.ram > 90 ? 'danger' : (s.ram > 75 ? 'warn' : null);
-        headline.add_child(hcell('CPU',    `${s.cpu.toFixed(0)}%`, cpuClass));
-        headline.add_child(hcell('RAM',    `${s.ram.toFixed(0)}%`, ramClass));
-        headline.add_child(hcell('Uptime', this._upFmt(s.uptime)));
+        grid.add_child(stat('CPU', `${s.cpu.toFixed(0)}%`, {bar: s.cpu, color: '#0A84FF'}));
+        grid.add_child(stat('Memory', `${s.ram.toFixed(0)}%`, {bar: s.ram, color: '#BF5AF2'}));
         if (s.battery) {
-            const timeStr = s.battery.minutes
-                ? (s.battery.status === 'Charging' ? `${this._timeFmt(s.battery.minutes)} to full` : this._timeFmt(s.battery.minutes))
-                : s.battery.status;
-            headline.add_child(hcell('Battery', `${s.battery.capacity}% · ${timeStr}`));
+            const b = s.battery;
+            const sub = b.minutes
+                ? (b.status === 'Charging' ? `${this._timeFmt(b.minutes)} to full` : `${this._timeFmt(b.minutes)} left`)
+                : b.status;
+            grid.add_child(stat('Battery', `${b.capacity}%`, {sub, valueCls: b.plugged ? 'good' : b.capacity < 20 ? 'bad' : ''}));
         }
-        box.add_child(headline);
+        grid.add_child(stat('Uptime', this._upFmt(s.uptime), {sub: s.swap > 0 ? `Swap ${s.swap.toFixed(0)}%` : 'No swap in use'}));
+        box.add_child(grid);
 
-        /* body: compact 2-col stat grid on the left, optional music card
-           slotted into the right column. Each stat is "Label value" on one
-           line — frees up screen space per user feedback. */
-        const body = new St.BoxLayout({style_class: 'nexnotch-sys-body', vertical: false, x_expand: true, y_expand: true});
-        const leftCol = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-sys-left'});
-        const stats = [];
-        if (s.swap > 0)   stats.push(['Swap',  `${s.swap.toFixed(0)}%`]);
-        stats.push(['Net ↓',  this._kbFmt(s.net_rx)]);
-        stats.push(['Net ↑',  this._kbFmt(s.net_tx)]);
-        stats.push(['Disk ↓', this._kbFmt(s.disk_r)]);
-        stats.push(['Disk ↑', this._kbFmt(s.disk_w)]);
-        if (s.temp > 0)   stats.push(['Temp',  `${s.temp.toFixed(0)}°C`]);
+        const list = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-sys-list', vertical: true, x_expand: true});
+        const icon = (names, color) => new St.Icon({gicon: Gio.ThemedIcon.new_from_names(names),
+            style_class: 'nexnotch-sys-row-icon', style: `color: ${color};`, y_align: Clutter.ActorAlign.CENTER});
+        const row = (names, color, label, value, last = false) => {
+            const r = new St.BoxLayout({style_class: `nexnotch-sys-row${last ? ' last' : ''}`, x_expand: true});
+            const left = new St.BoxLayout({style_class: 'nexnotch-sys-row-left', x_expand: true});
+            left.add_child(icon(names, color));
+            left.add_child(new St.Label({text: label, y_align: Clutter.ActorAlign.CENTER}));
+            r.add_child(left);
+            r.add_child(new St.Label({text: value, style_class: 'nexnotch-sys-row-value', y_align: Clutter.ActorAlign.CENTER}));
+            return r;
+        };
+        list.add_child(row(['network-transmit-receive-symbolic'], '#0A84FF', 'Network',
+            `↓ ${this._kbFmt(s.net_rx)}   ↑ ${this._kbFmt(s.net_tx)}`));
+        list.add_child(row(['drive-harddisk-symbolic'], '#64D2FF', 'Disk',
+            `Read ${this._kbFmt(s.disk_r)}   Write ${this._kbFmt(s.disk_w)}`));
+        if (s.temp > 0) list.add_child(row(['temperature-symbolic', 'sensors-temperature-symbolic', 'weather-clear-symbolic'], '#FF9F0A', 'Temperature', `${s.temp.toFixed(0)} °C`));
+        list.add_child(row(['power-profile-performance-symbolic', 'utilities-system-monitor-symbolic'], '#30D158', 'Load average',
+            s.load.map(x => x.toFixed(2)).join(' · '), !(s.disk_total > 0)));
         if (s.disk_total > 0) {
-            stats.push(['Storage', `${this._gbFmt(s.disk_used)} / ${this._gbFmt(s.disk_total)}`]);
+            const free = s.disk_total - s.disk_used;
+            const low = free / s.disk_total < 0.1;
+            const storage = new St.BoxLayout({style_class: 'nexnotch-sys-storage', vertical: true, x_expand: true});
+            const head = row(['drive-harddisk-solidstate-symbolic', 'drive-harddisk-symbolic'], '#FF9F0A', 'Storage',
+                `${this._gbFmt(s.disk_used)} of ${this._gbFmt(s.disk_total)} · ${this._gbFmt(free)} free`, true);
+            if (low) head.get_last_child().add_style_class_name('warn');
+            storage.add_child(head);
+            const level = new BarLevel({style_class: 'nexnotch-sys-bar storage', x_expand: true});
+            level.value = s.disk_used / s.disk_total;
+            level.set_style('-barlevel-active-background-color: #FF9F0A;');
+            storage.add_child(level);
+            list.add_child(storage);
         }
-        stats.push(['Load', s.load.map(x => x.toFixed(2)).join(' ')]);
-        for (const [label, value] of stats) {
-            const row = new St.BoxLayout({style_class: 'nexnotch-sys-inline-row', vertical: false, x_expand: true});
-            row.add_child(new St.Label({text: label, style_class: 'nexnotch-sys-inline-label'}));
-            row.add_child(new St.Label({text: value, style_class: 'nexnotch-sys-inline-value', x_expand: true, x_align: Clutter.ActorAlign.END}));
-            leftCol.add_child(row);
-        }
-        body.add_child(leftCol);
-        if (musicCard) body.add_child(musicCard);
-        box.add_child(body);
-
+        box.add_child(list);
         return box;
     }
 

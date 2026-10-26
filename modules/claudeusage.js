@@ -3,6 +3,8 @@ import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
+
+import {Ring} from './ui.js';
 import Soup from 'gi://Soup?version=3.0';
 
 /* Reads the local Claude Code CLI's own OAuth token (the same one the
@@ -99,113 +101,62 @@ export const ClaudeUsage = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-claude', vertical: true, x_expand: true, y_expand: true});
-
-        if (this._lastError && !this._data) {
-            box.add_child(new St.Label({
-                text: 'Claude usage unavailable', style_class: 'nexnotch-empty', x_align: Clutter.ActorAlign.CENTER,
-            }));
-            box.add_child(new St.Label({
-                text: this._lastError, style_class: 'nexnotch-empty', x_align: Clutter.ActorAlign.CENTER,
-            }));
-            box.add_child(this._refreshRow());
-            return box;
-        }
+        const box = new St.BoxLayout({style_class: 'nexnotch-claude', vertical: true, x_expand: true});
         if (!this._data) {
-            box.add_child(new St.Label({
-                text: 'Loading Claude usage…', style_class: 'nexnotch-empty', x_align: Clutter.ActorAlign.CENTER,
-            }));
+            const msg = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-claude-msg', vertical: true, x_expand: true});
+            msg.add_child(new St.Label({text: this._lastError ? 'Claude usage unavailable' : 'Loading Claude usage…',
+                style_class: 'nexnotch-section-title', x_align: Clutter.ActorAlign.CENTER}));
+            if (this._lastError) msg.add_child(new St.Label({text: this._lastError, style_class: 'nexnotch-muted', x_align: Clutter.ActorAlign.CENTER}));
+            box.add_child(msg);
+            if (this._lastError) box.add_child(this._refreshRow());
             return box;
         }
-
-        const rings = new St.BoxLayout({style_class: 'nexnotch-claude-rings', x_expand: true, x_align: Clutter.ActorAlign.CENTER});
-        const fiveHour = this._data.five_hour;
-        const sevenDay = this._data.seven_day;
-        if (fiveHour) rings.add_child(this._ring('Session (5h)', fiveHour.utilization, fiveHour.resets_at));
-        if (sevenDay) rings.add_child(this._ring('Weekly', sevenDay.utilization, sevenDay.resets_at));
-        box.add_child(rings);
+        const cards = new St.BoxLayout({style_class: 'nexnotch-claude-cards', x_expand: true});
+        cards.layout_manager.homogeneous = true;
+        const {five_hour: fiveHour, seven_day: sevenDay} = this._data;
+        if (fiveHour) cards.add_child(this._ring('Session', '5-hour window', fiveHour.utilization, fiveHour.resets_at, ['#FF9F0A', '#3A2A0E']));
+        if (sevenDay) cards.add_child(this._ring('Weekly', 'All models', sevenDay.utilization, sevenDay.resets_at, ['#0A84FF', '#0B2A4D']));
+        box.add_child(cards);
         box.add_child(this._refreshRow());
-
         return box;
     }
 
     _refreshRow() {
-        const row = new St.BoxLayout({style_class: 'nexnotch-claude-refresh-row', x_expand: true});
+        const row = new St.BoxLayout({style_class: 'nexnotch-claude-footer', x_expand: true});
         const minutes = Math.max(1, this._settings.get_int('claude-usage-refresh'));
-        row.add_child(new St.Label({
-            text: `Auto-refreshes every ${minutes} min`,
-            style_class: 'nexnotch-claude-refresh-label',
-            x_expand: true,
-        }));
-        const btn = new St.Button({style_class: 'nexnotch-claude-refresh-btn', label: '↻ Refresh', can_focus: true});
-        btn.connect('clicked', () => { btn.label = 'Refreshing…'; this._fetch(); });
+        row.add_child(new St.Label({text: `Auto-refreshes every ${minutes} min`, style_class: 'nexnotch-claude-footer-label',
+            x_expand: true, y_align: Clutter.ActorAlign.CENTER}));
+        const box = new St.BoxLayout({style_class: 'nexnotch-pill-btn-box'});
+        box.add_child(new St.Icon({icon_name: 'view-refresh-symbolic', style_class: 'nexnotch-pill-btn-icon', y_align: Clutter.ActorAlign.CENTER}));
+        const label = new St.Label({text: 'Refresh', y_align: Clutter.ActorAlign.CENTER});
+        box.add_child(label);
+        const btn = new St.Button({style_class: 'nexnotch-pill-btn', child: box, can_focus: true});
+        btn.connect('clicked', () => { label.text = 'Refreshing…'; this._fetch(); });
         row.add_child(btn);
         return row;
     }
 
-    _ring(label, pct, resetsAt) {
+    _ring(title, subtitle, pct, resetsAt, [color, track]) {
         pct = Math.max(0, Math.min(100, pct ?? 0));
-        const col = new St.BoxLayout({style_class: 'nexnotch-claude-ringcol', vertical: true, x_align: Clutter.ActorAlign.CENTER});
-
-        const SIZE = 72;
-        const wrap = new St.Widget({layout_manager: new Clutter.BinLayout(), width: SIZE, height: SIZE});
-        const area = new St.DrawingArea({style_class: 'nexnotch-claude-ring', width: SIZE, height: SIZE});
-        area.connect('repaint', () => this._paintRing(area, pct, SIZE));
-        wrap.add_child(area);
-
-        const pctClass = pct > 90 ? 'danger' : (pct > 70 ? 'warn' : null);
-        const pctLabel = new St.Label({
-            text: `${pct.toFixed(0)}%`,
-            style_class: 'nexnotch-claude-ring-pct',
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        if (pctClass) pctLabel.add_style_class_name(pctClass);
-        wrap.add_child(pctLabel);
-
-        col.add_child(wrap);
-        col.add_child(new St.Label({text: label, style_class: 'nexnotch-claude-label', x_align: Clutter.ActorAlign.CENTER}));
-
+        if (pct > 90) [color, track] = ['#FF453A', '#3A1210'];
+        const card = new St.BoxLayout({style_class: 'nexnotch-claude-card', x_expand: true});
+        const wrap = new St.Widget({layout_manager: new Clutter.BinLayout(), width: 86, height: 86, y_align: Clutter.ActorAlign.CENTER});
+        wrap.add_child(new Ring({size: 86, thickness: 10, track, color, frac: pct / 100, accessibleName: `${title} ${pct.toFixed(0)}% used`}));
+        wrap.add_child(new St.Label({text: `${pct.toFixed(0)}%`, style_class: 'nexnotch-claude-pct',
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER}));
+        card.add_child(wrap);
+        const text = new St.BoxLayout({vertical: true, style_class: 'nexnotch-claude-text', y_align: Clutter.ActorAlign.CENTER});
+        text.add_child(new St.Label({text: title, style_class: 'nexnotch-claude-title'}));
+        text.add_child(new St.Label({text: subtitle, style_class: 'nexnotch-muted'}));
         if (resetsAt) {
-            try {
-                const d = new Date(resetsAt);
-                col.add_child(new St.Label({
-                    text: `Resets ${d.toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}`,
-                    style_class: 'nexnotch-claude-reset',
-                    x_align: Clutter.ActorAlign.CENTER,
-                }));
-            } catch (_) {}
+            const d = new Date(resetsAt);
+            const sameDay = d.toDateString() === new Date().toDateString();
+            const time = d.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+            const when = sameDay ? time : `${d.toLocaleDateString([], {weekday: 'short'})} ${d.getDate()} ${d.toLocaleDateString([], {month: 'short'})}, ${time}`;
+            text.add_child(new St.Label({text: `Resets ${when}`, style_class: 'nexnotch-claude-reset', style: `color: ${color};`}));
         }
-
-        return col;
+        card.add_child(text);
+        return card;
     }
 
-    _paintRing(area, pct, size) {
-        const cr = area.get_context();
-        const thick = 6;
-        const cx = size / 2, cy = size / 2, r = size / 2 - thick / 2;
-
-        cr.setLineWidth(thick);
-        try { cr.setLineCap(1); } catch (_) {} // 1 = Cairo.LineCap.ROUND
-
-        /* track */
-        cr.setSourceRGBA(1, 1, 1, 0.12);
-        cr.arc(cx, cy, r, 0, 2 * Math.PI);
-        cr.stroke();
-
-        /* fill arc, starting at 12 o'clock, clockwise */
-        const frac = pct / 100;
-        if (frac > 0) {
-            let color;
-            if (pct > 90)      color = [1, 0.4, 0.35];
-            else if (pct > 70) color = [1, 0.75, 0.31];
-            else               color = [0.47, 0.67, 1];
-            cr.setSourceRGBA(color[0], color[1], color[2], 0.95);
-            const start = -Math.PI / 2;
-            cr.arc(cx, cy, r, start, start + frac * 2 * Math.PI);
-            cr.stroke();
-        }
-
-        cr.$dispose();
-    }
 });

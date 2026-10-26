@@ -104,101 +104,157 @@ export const Weather = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-weather', vertical: true, x_expand: true, y_expand: true});
-
-        /* error state — network failed or wttr.in 5xx */
-        if (this._lastError && !this._data && !this._data2) {
-            box.add_child(new St.Label({
-                text: 'Weather unavailable',
-                style_class: 'nexnotch-empty',
-                x_align: Clutter.ActorAlign.CENTER,
-            }));
-            box.add_child(new St.Label({
-                text: this._lastError,
-                style_class: 'nexnotch-empty',
-                x_align: Clutter.ActorAlign.CENTER,
-            }));
+        const box = new St.BoxLayout({style_class: 'nexnotch-weather', vertical: true, x_expand: true});
+        const message = (title, sub) => {
+            const card = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-msg', vertical: true, x_expand: true});
+            card.add_child(new St.Label({text: title, style_class: 'nexnotch-section-title', x_align: Clutter.ActorAlign.CENTER}));
+            if (sub) card.add_child(new St.Label({text: sub, style_class: 'nexnotch-muted', x_align: Clutter.ActorAlign.CENTER}));
+            box.add_child(card);
             return box;
-        }
+        };
+        if (this._lastError && !this._data && !this._data2) return message('Weather unavailable', this._lastError);
 
         /* location switcher if two configured */
         const loc2 = this._settings.get_string('weather-location-2');
         if (loc2 && loc2.trim()) {
-            const switcher = new St.BoxLayout({style_class: 'nexnotch-weather-switcher', x_align: Clutter.ActorAlign.CENTER});
-            const lbl1 = this._settings.get_string('weather-location-label') ||
-                        (this._settings.get_string('weather-location') || 'Primary');
+            const seg = new St.BoxLayout({style_class: 'nexnotch-segmented', x_align: Clutter.ActorAlign.CENTER});
+            const lbl1 = this._settings.get_string('weather-location-label') || (this._settings.get_string('weather-location') || 'Primary');
             const lbl2 = this._settings.get_string('weather-location-2-label') || loc2;
             for (const [slot, label] of [[1, lbl1], [2, lbl2]]) {
-                const btn = new St.Button({
-                    style_class: 'nexnotch-weather-tab' + (this._active === slot ? ' active' : ''),
-                    label,
-                });
+                const btn = new St.Button({style_class: 'nexnotch-segment', label, can_focus: true});
+                if ((this._active ?? 1) === slot) btn.add_style_pseudo_class('checked');
                 btn.connect('clicked', () => { this._active = slot; this.emit('updated'); });
-                switcher.add_child(btn);
+                seg.add_child(btn);
             }
-            box.add_child(switcher);
+            box.add_child(seg);
         }
 
         const data = this._active === 2 ? this._data2 : this._data;
-        if (!data) {
-            box.add_child(new St.Label({
-                text: 'Loading weather…',
-                style_class: 'nexnotch-empty',
-                x_align: Clutter.ActorAlign.CENTER,
-            }));
-            return box;
-        }
+        if (!data) return message('Loading weather…');
 
         try {
-            const cur   = data.current_condition?.[0];
-            const area  = data.nearest_area?.[0]?.areaName?.[0]?.value ?? '—';
-            const days  = data.weather ?? [];
-            const unit  = data._unit ?? 'm';
+            const cur  = data.current_condition?.[0];
+            const area = data.nearest_area?.[0]?.areaName?.[0]?.value ?? '—';
+            const days = (data.weather ?? []).slice(0, 3);
+            const f    = (data._unit ?? 'm') === 'u';
+            const deg  = (c, fh) => `${f ? fh : c}°`;
 
-            const header = new St.BoxLayout({style_class: 'nexnotch-weather-header'});
-            const left = new St.BoxLayout({vertical: true, x_expand: true});
-            left.add_child(new St.Label({text: area, style_class: 'nexnotch-weather-area'}));
-            left.add_child(new St.Label({
-                text: cur.weatherDesc?.[0]?.value ?? '',
-                style_class: 'nexnotch-weather-desc',
-            }));
-            header.add_child(left);
+            const top = new St.BoxLayout({style_class: 'nexnotch-weather-top', x_expand: true});
+            const hero = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-hero', vertical: true, x_expand: true});
+            const heroHead = new St.BoxLayout({x_expand: true});
+            const place = new St.BoxLayout({vertical: true, x_expand: true});
+            const name = new St.BoxLayout({style_class: 'nexnotch-weather-place'});
+            name.add_child(new St.Label({text: area, style_class: 'nexnotch-section-title'}));
+            name.add_child(new St.Icon({icon_name: 'find-location-symbolic', style_class: 'nexnotch-weather-pin', y_align: Clutter.ActorAlign.CENTER}));
+            place.add_child(name);
+            place.add_child(new St.Label({text: cur.weatherDesc?.[0]?.value ?? '', style_class: 'nexnotch-muted'}));
+            heroHead.add_child(place);
+            heroHead.add_child(new St.Icon({icon_name: this._icon(cur.weatherCode), style_class: 'nexnotch-weather-icon'}));
+            hero.add_child(heroHead);
+            const heroFoot = new St.BoxLayout({x_expand: true, y_expand: true, y_align: Clutter.ActorAlign.END});
+            heroFoot.add_child(new St.Label({text: deg(cur.temp_C, cur.temp_F), style_class: 'nexnotch-weather-temp', x_expand: true}));
+            if (days[0]) heroFoot.add_child(new St.Label({text: `H:${deg(days[0].maxtempC, days[0].maxtempF)}  L:${deg(days[0].mintempC, days[0].mintempF)}`,
+                style_class: 'nexnotch-weather-hl', y_align: Clutter.ActorAlign.END}));
+            hero.add_child(heroFoot);
+            top.add_child(hero);
 
-            const temp = unit === 'u' ? `${cur.temp_F}°F` : `${cur.temp_C}°C`;
-            header.add_child(new St.Label({text: temp, style_class: 'nexnotch-weather-temp'}));
-            box.add_child(header);
-
-            const meta = new St.BoxLayout({style_class: 'nexnotch-weather-meta', vertical: false});
-            meta.add_child(this._metaCell('Feels', unit === 'u' ? `${cur.FeelsLikeF}°` : `${cur.FeelsLikeC}°`));
-            meta.add_child(this._metaCell('Humidity', `${cur.humidity}%`));
-            meta.add_child(this._metaCell('Wind', unit === 'u' ? `${cur.windspeedMiles} mph` : `${cur.windspeedKmph} km/h`));
-            meta.add_child(this._metaCell('UV', cur.uvIndex));
-            box.add_child(meta);
-
-            const forecast = new St.BoxLayout({style_class: 'nexnotch-weather-forecast', vertical: false});
-            for (const d of days.slice(0, 3)) {
-                const cell = new St.BoxLayout({style_class: 'nexnotch-weather-day', vertical: true, x_expand: true});
-                const day  = new Date(d.date).toLocaleDateString([], {weekday: 'short'});
-                cell.add_child(new St.Label({text: day, style_class: 'nexnotch-weather-day-label'}));
-                const range = unit === 'u' ? `${d.mintempF}° / ${d.maxtempF}°` : `${d.mintempC}° / ${d.maxtempC}°`;
-                cell.add_child(new St.Label({text: range, style_class: 'nexnotch-weather-day-temp'}));
-                const desc = d.hourly?.[4]?.weatherDesc?.[0]?.value ?? '';
-                cell.add_child(new St.Label({text: desc, style_class: 'nexnotch-weather-day-desc'}));
-                forecast.add_child(cell);
+            const tiles = new St.BoxLayout({style_class: 'nexnotch-weather-tiles', vertical: true});
+            const uv = Number(cur.uvIndex);
+            const uvWord = uv <= 2 ? 'Low' : uv <= 5 ? 'Moderate' : uv <= 7 ? 'High' : uv <= 10 ? 'Very high' : 'Extreme';
+            const cells = [
+                ['FEELS LIKE', deg(cur.FeelsLikeC, cur.FeelsLikeF), ''],
+                ['HUMIDITY', `${cur.humidity}%`, ''],
+                ['WIND', f ? cur.windspeedMiles : cur.windspeedKmph, f ? 'mph' : 'km/h'],
+                ['UV INDEX', String(cur.uvIndex), uvWord],
+            ];
+            for (let i = 0; i < 4; i += 2) {
+                const row = new St.BoxLayout({style_class: 'nexnotch-weather-tile-row'});
+                row.layout_manager.homogeneous = true;
+                for (const [label, value, unit] of cells.slice(i, i + 2)) row.add_child(this._metaCell(label, value, unit));
+                tiles.add_child(row);
             }
-            box.add_child(forecast);
+            top.add_child(tiles);
+            box.add_child(top);
+
+            if (days.length) {
+                const lo = Math.min(...days.map(d => Number(f ? d.mintempF : d.mintempC)));
+                const hi = Math.max(...days.map(d => Number(f ? d.maxtempF : d.maxtempC)));
+                const list = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-days', vertical: true, x_expand: true});
+                days.forEach((d, i) => {
+                    const row = new St.BoxLayout({style_class: `nexnotch-weather-day${i === days.length - 1 ? ' last' : ''}`, x_expand: true});
+                    row.add_child(new St.Label({text: i === 0 ? 'Today' : new Date(d.date).toLocaleDateString([], {weekday: 'short'}),
+                        style_class: 'nexnotch-weather-day-name', y_align: Clutter.ActorAlign.CENTER}));
+                    const code = d.hourly?.[4]?.weatherCode;
+                    row.add_child(new St.Icon({icon_name: this._icon(code), style_class: 'nexnotch-weather-day-icon', y_align: Clutter.ActorAlign.CENTER}));
+                    const min = Number(f ? d.mintempF : d.mintempC), max = Number(f ? d.maxtempF : d.maxtempC);
+                    row.add_child(new St.Label({text: `${min}°`, style_class: 'nexnotch-weather-day-min', y_align: Clutter.ActorAlign.CENTER}));
+                    const now = i === 0 ? Number(f ? cur.temp_F : cur.temp_C) : null;
+                    row.add_child(this._rangeBar(lo, hi, min, max, now));
+                    row.add_child(new St.Label({text: `${max}°`, style_class: 'nexnotch-weather-day-max', y_align: Clutter.ActorAlign.CENTER}));
+                    list.add_child(row);
+                });
+                box.add_child(list);
+            }
         } catch (e) {
             logError(e, 'nexnotch:weather:render');
-            box.add_child(new St.Label({text: 'Weather data malformed', style_class: 'nexnotch-empty'}));
+            return message('Weather data malformed');
         }
-
         return box;
     }
 
-    _metaCell(label, value) {
-        const c = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-weather-meta-cell'});
-        c.add_child(new St.Label({text: label, style_class: 'nexnotch-weather-meta-label'}));
-        c.add_child(new St.Label({text: `${value}`, style_class: 'nexnotch-weather-meta-value'}));
+    _metaCell(label, value, unit) {
+        const c = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-weather-tile'});
+        c.add_child(new St.Label({text: label, style_class: 'nexnotch-weather-tile-label'}));
+        const v = new St.BoxLayout({style_class: 'nexnotch-weather-tile-value-box'});
+        v.add_child(new St.Label({text: `${value}`, style_class: 'nexnotch-weather-tile-value'}));
+        if (unit) v.add_child(new St.Label({text: unit, style_class: 'nexnotch-weather-tile-unit', y_align: Clutter.ActorAlign.END}));
+        c.add_child(v);
         return c;
+    }
+
+    /* wttr.in weather codes → icon names */
+    _icon(code) {
+        const c = Number(code);
+        if (c === 113) return 'weather-clear-symbolic';
+        if (c === 116) return 'weather-few-clouds-symbolic';
+        if ([143, 248, 260].includes(c)) return 'weather-fog-symbolic';
+        if ([200, 386, 389, 392, 395].includes(c)) return 'weather-storm-symbolic';
+        if ([179, 182, 185, 227, 230, 317, 320, 323, 326, 329, 332, 335, 338, 350, 362, 365, 368, 371, 374, 377].includes(c)) return 'weather-snow-symbolic';
+        if ([176, 263, 266, 281, 284, 293, 296, 353].includes(c)) return 'weather-showers-scattered-symbolic';
+        if ([299, 302, 305, 308, 311, 314, 356, 359].includes(c)) return 'weather-showers-symbolic';
+        return 'weather-overcast-symbolic';
+    }
+
+    /* the day's low..high on the week's scale; a dot marks the current temperature */
+    _rangeBar(lo, hi, min, max, now) {
+        const area = new St.DrawingArea({style_class: 'nexnotch-weather-range', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        area.connect('repaint', () => {
+            const cr = area.get_context();
+            const [w, h] = area.get_surface_size();
+            const span = Math.max(1, hi - lo), r = 2.5, y = h / 2;
+            const x = t => r + (w - 2 * r) * ((t - lo) / span);
+            const pill = (x0, x1, rr) => {
+                cr.newSubPath();
+                cr.arc(x0, y, rr, Math.PI / 2, 1.5 * Math.PI);
+                cr.arc(x1, y, rr, -Math.PI / 2, Math.PI / 2);
+                cr.closePath();
+            };
+            cr.setSourceRGBA(0.17, 0.17, 0.18, 1);
+            pill(r, w - r, r);
+            cr.fill();
+            cr.setSourceRGBA(1, 0.62, 0.04, 1);
+            pill(x(min), Math.max(x(min), x(max)), r);
+            cr.fill();
+            if (now !== null) {
+                cr.setSourceRGBA(0.11, 0.11, 0.12, 1);
+                cr.arc(x(Math.min(hi, Math.max(lo, now))), y, 6.5, 0, 2 * Math.PI);
+                cr.fill();
+                cr.setSourceRGBA(1, 1, 1, 1);
+                cr.arc(x(Math.min(hi, Math.max(lo, now))), y, 4.5, 0, 2 * Math.PI);
+                cr.fill();
+            }
+            cr.$dispose();
+        });
+        return area;
     }
 });

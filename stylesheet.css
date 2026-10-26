@@ -212,7 +212,6 @@
 .nexnotch-weather-meta-label { color: rgba(255, 255, 255, 0.45); font-size: 9px; font-weight: 600; letter-spacing: 0.4px; }
 .nexnotch-weather-meta-value { color: rgba(255, 255, 255, 0.92); font-size: 12px; font-weight: 500; }
 .nexnotch-weather-forecast { spacing: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
-.nexnotch-weather-day { spacing: 2px; padding: 6px 4px; border-radius: 8px; background-color: rgba(255, 255, 255, 0.04); }
 .nexnotch-weather-day-label { color: rgba(255, 255, 255, 0.72); font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
 .nexnotch-weather-day-temp  { color: white; font-size: 12px; font-weight: 500; font-feature-settings: "tnum"; }
 .nexnotch-weather-day-desc  { color: rgba(255, 255, 255, 0.5); font-size: 9px; }
@@ -501,11 +500,6 @@
 .nexnotch-cal-agenda { spacing: 0; }
 .nexnotch-cal-agenda-scroll { max-height: 260px; }
 
-.nexnotch-cal-row, .nexnotch-task-row {
-    padding: 4px 2px;
-    spacing: 10px;
-    border-radius: 6px;
-}
 .nexnotch-cal-row:hover, .nexnotch-task-row:hover {
     background-color: rgba(255, 255, 255, 0.04);
 }
@@ -797,5 +791,488 @@
     text-align: right;
 }
 
-/* ——— drink-water cup in the collapsed pill ——— */
-.nexnotch-water-cup { width: 11px; height: 14px; margin-left: 8px; }
+/* ——— Water page ——— */
+.nexnotch-water { spacing: 16px; }
+.nexnotch-water-main { spacing: 6px; }
+.nexnotch-water-head { spacing: 2px; }
+.nexnotch-water-title { color: white; font-size: 15px; font-weight: 700; }
+.nexnotch-water .accent, .nexnotch-water-title.accent { color: rgb(95, 175, 255); }
+.nexnotch-water-ring { width: 16px; height: 16px; margin-left: 8px; }
+.nexnotch-water-big { color: white; font-size: 30px; font-weight: 700; font-feature-settings: "tnum"; }
+.nexnotch-water-goal { color: rgba(255, 255, 255, 0.55); font-size: 13px; font-weight: 600; padding-bottom: 5px; }
+.nexnotch-water-sub { color: rgba(255, 255, 255, 0.6); font-size: 11px; font-weight: 600; }
+.nexnotch-water-bar {
+    height: 6px;
+    -barlevel-height: 6px;
+    -barlevel-background-color: rgba(255, 255, 255, 0.12);
+    -barlevel-active-background-color: rgb(80, 170, 255);
+    -barlevel-overdrive-separator-width: 0;
+}
+.nexnotch-water-btns { spacing: 8px; padding-top: 4px; }
+.nexnotch-water-btn {
+    padding: 6px 14px; border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.10);
+    color: white; font-size: 12px; font-weight: 600;
+}
+.nexnotch-water-btn:hover { background-color: rgba(255, 255, 255, 0.18); }
+.nexnotch-water-btn.primary { background-color: rgba(60, 140, 255, 0.35); }
+.nexnotch-water-btn.primary:hover { background-color: rgba(60, 140, 255, 0.5); }
+.nexnotch-water-btn-icon { icon-size: 14px; padding-right: 6px; }
+.nexnotch-water-toggle { padding: 0; }
+.nexnotch-water-divider { width: 1px; background-color: rgba(255, 255, 255, 0.08); }
+.nexnotch-water-chart { width: 230px; spacing: 4px; }
+.nexnotch-water-bars { min-height: 96px; }
+.nexnotch-water-axis { width: 40px; padding-left: 6px; color: rgba(255, 255, 255, 0.5); font-size: 10px; font-feature-settings: "tnum"; }
+.nexnotch-water-hours { color: rgba(255, 255, 255, 0.5); font-size: 10px; font-feature-settings: "tnum"; }
+.nexnotch-water-axis-gap { width: 40px; }
+
+/* ——— Shelf ——— */
+.nexnotch-shelf { spacing: 8px; }
+.nexnotch-shelf-head { padding: 0 4px; }
+.nexnotch-shelf-count { color: rgba(255, 255, 255, 0.55); font-size: 11px; font-weight: 600; }
+.nexnotch-shelf-clear {
+    padding: 3px 12px; border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.10);
+    color: rgba(255, 255, 255, 0.85); font-size: 11px; font-weight: 600;
+}
+.nexnotch-shelf-clear:hover { background-color: rgba(255, 255, 255, 0.18); color: white; }
+.nexnotch-shelf-zone {
+    min-height: 96px; spacing: 4px; padding: 16px;
+    border: 1.5px solid rgba(255, 255, 255, 0.18); border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+.nexnotch-shelf-zone:hover {
+    border-color: rgba(120, 180, 255, 0.8);
+    background-color: rgba(80, 150, 255, 0.10);
+}
+.nexnotch-shelf-zone-icon { icon-size: 22px; color: rgba(255, 255, 255, 0.75); }
+.nexnotch-shelf-zone-title { color: white; font-size: 14px; font-weight: 600; }
+.nexnotch-shelf-zone-sub { color: rgba(255, 255, 255, 0.45); font-size: 10px; }
+.nexnotch-shelf-grid { spacing: 4px; }
+.nexnotch-shelf-row { spacing: 6px; padding: 2px; }
+.nexnotch-shelf-scroll { max-height: 250px; }
+.nexnotch-shelf-tile.missing { opacity: 0.45; }
+.nexnotch-shelf-sub { color: rgba(255, 255, 255, 0.5); font-size: 10px; }
+.nexnotch-shelf-actions { spacing: 2px; padding: 4px; }
+.nexnotch-shelf-act {
+    width: 20px; height: 20px; border-radius: 10px;
+    background-color: rgba(40, 40, 46, 0.95); color: white;
+}
+.nexnotch-shelf-act:hover { background-color: rgb(80, 80, 90); }
+.nexnotch-shelf-act StIcon { icon-size: 11px; }
+
+/* ═══════════ Design revamp — island frame, pill, peeks ═══════════
+   Tokens: ground #000 · card #1C1C1E · raised #2C2C2E / #3A3A3C · muted
+   text #A1A1A6 · blue #0A84FF · green #30D158 · orange #FF9F0A · red #FF453A
+   · cyan #64D2FF · pink #FF8FB1 · type Inter */
+.nexnotch { font-family: "Inter", "SF Pro Text", "Adwaita Sans", "Cantarell", sans-serif; color: white; }
+/* no box-shadow: the notch clips to its rectangle, which would keep the
+   shadow only inside the rounded corners as a dark square */
+.nexnotch-bg { border: 0; box-shadow: none; }
+
+/* expanded frame */
+.nexnotch-expanded { padding: 20px 20px 13px; spacing: 14px; }
+.nexnotch-header { padding: 0 7px; }
+.nexnotch-big-clock {
+    color: white; font-size: 31px; font-weight: 600;
+    letter-spacing: -0.6px; font-feature-settings: "tnum";
+}
+.nexnotch-date { color: white; font-size: 12px; font-weight: 600; }
+.nexnotch-date-month { color: #A1A1A6; font-size: 12px; font-weight: 400; }
+.nexnotch-content { padding: 0; }
+.nexnotch-dots { spacing: 5px; padding-top: 1.8px; }
+.nexnotch-page-dot { width: 5px; height: 5px; border-radius: 3px; background-color: #48484A; }
+.nexnotch-page-dot:hover { background-color: #7C7C80; }
+.nexnotch-page-dot:checked { width: 16px; background-color: white; }
+
+/* collapsed pill: battery · clock · date / timer / waveform */
+.nexnotch-collapsed { padding: 0 13px; }
+.nexnotch-cluster { spacing: 0; }
+.nexnotch-battery-glyph { width: 22px; height: 11px; }
+.nexnotch-battery-pct { color: white; font-size: 12px; font-weight: 600; font-feature-settings: "tnum"; padding-left: 5px; }
+.nexnotch-clock { color: white; font-size: 13px; font-weight: 600; font-feature-settings: "tnum"; }
+.nexnotch-date-mini { color: #A1A1A6; font-size: 12px; font-weight: 400; }
+.nexnotch-pomo-chip { spacing: 4px; }
+.nexnotch-pomo-chip-icon { icon-size: 13px; color: #FF9F0A; }
+.nexnotch-pomo-mini {
+    color: #FF9F0A; font-size: 12px; font-weight: 600; font-feature-settings: "tnum";
+    background-color: transparent; padding: 0; border: 0;
+}
+.nexnotch-pomo-chip.break .nexnotch-pomo-mini, .nexnotch-pomo-chip.break .nexnotch-pomo-chip-icon { color: #30D158; }
+.nexnotch-pomo-chip.paused .nexnotch-pomo-mini, .nexnotch-pomo-chip.paused .nexnotch-pomo-chip-icon { color: #A1A1A6; }
+.nexnotch-wave { spacing: 3px; height: 14px; padding-left: 9px; }
+.nexnotch-wave-bar { width: 3px; border-radius: 1.8px; background-color: #FF8FB1; }
+.nexnotch-wave.large { height: 20px; padding-left: 0; }
+.nexnotch-wave.large .nexnotch-wave-bar { width: 4px; }
+
+/* compact peeks (track change, water, charger, OSD, shelf) */
+.nexnotch-peek-host { padding: 0; }
+.nexnotch-peek-row { spacing: 11px; padding: 0 18px 0 13px; }
+.nexnotch-peek-row.compact { spacing: 9px; padding: 0 13px; }
+.nexnotch-peek-text { spacing: 0.9px; }
+.nexnotch-peek-art {
+    width: 47px; height: 47px; border-radius: 13px;
+    background-color: #5B3A4B; background-size: cover; background-position: center;
+}
+.nexnotch-peek-caption { color: #A1A1A6; font-size: 10px; }
+.nexnotch-peek-muted { color: #A1A1A6; font-size: 12px; font-feature-settings: "tnum"; }
+.nexnotch-peek-charge { spacing: 5px; color: white; font-size: 12px; font-weight: 600; }
+.nexnotch-peek-charge.plugged { color: #30D158; }
+.nexnotch-peek-charge-icon { icon-size: 13px; color: #30D158; }
+.nexnotch-peek-charge-pct { color: white; font-size: 13px; font-weight: 600; font-feature-settings: "tnum"; }
+.nexnotch-peek-charge-pct.plugged { color: #30D158; }
+.nexnotch-osd { spacing: 11px; padding: 0 14px 0 13px; }
+.nexnotch-osd-icon { icon-size: 16px; color: white; }
+.nexnotch-osd-level {
+    height: 5px;
+    -barlevel-height: 5px;
+    -barlevel-background-color: #3A3A3C;
+    -barlevel-active-background-color: white;
+    -barlevel-overdrive-color: #FF453A;
+    -barlevel-overdrive-separator-width: 0;
+}
+.nexnotch-osd-label { color: white; font-size: 12px; font-weight: 600; min-width: 29px; text-align: right; }
+.nexnotch-peek-water { width: 43px; height: 43px; border-radius: 22px; background-color: #0B3340; }
+.nexnotch-peek-drink {
+    height: 31px; padding: 0 14px; border-radius: 15px;
+    background-color: #64D2FF; color: black; font-size: 12px; font-weight: 600;
+}
+.nexnotch-peek-drink:hover { background-color: #8FE0FF; }
+.nexnotch-drop-pill {
+    spacing: 9px; padding: 0 20px;
+    border: 1.5px solid #0A84FF; border-top-width: 0; border-radius: 0 0 27px 27px;
+}
+.nexnotch-drop-pill-icon { icon-size: 18px; color: #0A84FF; }
+.nexnotch-drop-pill-title { color: white; font-size: 13px; font-weight: 600; }
+.nexnotch-drop-pill-count { color: #A1A1A6; font-size: 11px; }
+.nexnotch-drop-wrap { padding: 13px; }
+.nexnotch-drop-zone {
+    spacing: 7px; padding-top: 23px;
+    border: 2px solid #0A84FF; border-radius: 25px; background-color: #08182C;
+}
+.nexnotch-drop-disc { width: 43px; height: 43px; border-radius: 22px; background-color: #0A84FF; }
+.nexnotch-drop-disc-icon { icon-size: 20px; color: white; }
+.nexnotch-drop-title { color: white; font-size: 15px; font-weight: 600; }
+.nexnotch-drop-sub { color: #A1A1A6; font-size: 12px; }
+.nexnotch-peek-added { spacing: 7px; color: white; font-size: 12px; font-weight: 600; }
+.nexnotch-peek-added-check { width: 16px; height: 16px; border-radius: 8px; background-color: #0A84FF; }
+.nexnotch-peek-added-icon { icon-size: 10px; color: white; }
+
+/* notification peek */
+.nexnotch-peek { spacing: 11px; padding: 0 20px 0 14px; background-color: transparent; border: 0; border-radius: 0; }
+.nexnotch-peek-icon-bin { width: 43px; height: 43px; border-radius: 12px; background-color: #2C2C2E; }
+.nexnotch-peek-title { color: white; font-size: 14px; font-weight: 600; }
+.nexnotch-peek-time { color: #A1A1A6; font-size: 11px; }
+.nexnotch-peek-body { color: #A1A1A6; font-size: 12px; }
+.nexnotch-peek-dismiss { color: #A1A1A6; background-color: transparent; }
+
+/* ═══════════ Tabs ═══════════ */
+.nexnotch-card { background-color: #1C1C1E; border-radius: 23px; }
+.nexnotch-pill-btn {
+    height: 27px; padding: 0 13px; border-radius: 14px;
+    background-color: #2C2C2E; color: white; font-size: 12px; font-weight: 500;
+}
+.nexnotch-pill-btn:hover { background-color: #3A3A3C; }
+.nexnotch-section-title { color: white; font-size: 15px; font-weight: 600; }
+.nexnotch-muted { color: #A1A1A6; font-size: 12px; }
+.nexnotch-caps { color: #A1A1A6; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; }
+
+/* Notifs: player + history */
+.nexnotch-player { background-color: #3B2430; border-radius: 27px; padding: 14px 16px 11px; spacing: 11px; }
+.nexnotch-player-top { spacing: 13px; }
+.nexnotch-player-art {
+    width: 65px; height: 65px; border-radius: 14px;
+    background-color: #6E4659; background-size: cover; background-position: center;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+.nexnotch-player-text { spacing: 1.8px; }
+.nexnotch-player-source-box { spacing: 5px; }
+.nexnotch-player-dot { width: 6px; height: 6px; border-radius: 4px; background-color: #30D158; }
+.nexnotch-player-source { color: #A1A1A6; font-size: 11px; }
+.nexnotch-player-title { color: white; font-size: 16px; font-weight: 600; }
+.nexnotch-player-artist { color: #A1A1A6; font-size: 13px; }
+.nexnotch-player-progress { spacing: 11px; }
+.nexnotch-player-time { color: #A1A1A6; font-size: 11px; font-feature-settings: "tnum"; min-width: 31px; }
+.nexnotch-player-time.end { text-align: right; }
+.nexnotch-player-bar {
+    height: 13px;
+    -barlevel-height: 4px;
+    -barlevel-background-color: rgba(255, 255, 255, 0.22);
+    -barlevel-active-background-color: white;
+    -barlevel-overdrive-separator-width: 0;
+    -slider-handle-radius: 0px;
+    -slider-handle-border-width: 0;
+    color: white;
+}
+.nexnotch-player-ctrls { spacing: 0; }
+.nexnotch-player-transport { spacing: 20px; }
+.nexnotch-player-btn { width: 40px; height: 40px; border-radius: 20px; color: #A1A1A6; }
+.nexnotch-player-btn StIcon { icon-size: 16px; }
+.nexnotch-player-btn:hover { background-color: rgba(255, 255, 255, 0.10); }
+.nexnotch-player-btn:checked { color: #FF8FB1; }
+.nexnotch-player-btn.main { color: white; }
+.nexnotch-player-btn.main StIcon { icon-size: 22px; }
+.nexnotch-player-btn.big { width: 47px; height: 47px; border-radius: 23px; }
+.nexnotch-player-btn.big StIcon { icon-size: 25px; }
+.nexnotch-player-btn.accent { color: #FF8FB1; }
+.nexnotch-player-btn.disabled { color: #48484A; }
+.nexnotch-lyrics-line { color: rgba(255, 255, 255, 0.45); font-size: 11px; }
+.nexnotch-lyrics-current { color: white; font-size: 14px; font-weight: 700; }
+
+.nexnotch-hist { spacing: 11px; }
+.nexnotch-hist-header { padding: 1.8px 7px 0; }
+.nexnotch-hist-heading { color: white; font-size: 15px; font-weight: 600; }
+.nexnotch-hist-empty { color: #A1A1A6; font-size: 12px; padding: 9px 0 5px; }
+.nexnotch-hist-scroll { max-height: 261px; }
+.nexnotch-hist-list { spacing: 7px; }
+.nexnotch-hist-card { background-color: #1C1C1E; border-radius: 20px; padding: 11px 14px 11px 11px; spacing: 11px; }
+.nexnotch-hist-card:hover { background-color: #232326; }
+.nexnotch-hist-icon { width: 36px; height: 36px; border-radius: 9px; background-color: #2C2C2E; }
+.nexnotch-hist-title { color: white; font-size: 14px; font-weight: 600; }
+.nexnotch-hist-time { color: #A1A1A6; font-size: 11px; padding-left: 7px; }
+.nexnotch-hist-body { color: #A1A1A6; font-size: 12px; padding-top: 1.8px; }
+.nexnotch-hist-dismiss { width: 20px; height: 20px; border-radius: 10px; margin: 5px; background-color: #3A3A3C; color: #E5E5EA; }
+.nexnotch-hist-dismiss StIcon { icon-size: 9px; }
+
+/* System */
+.nexnotch-sys { spacing: 14px; }
+.nexnotch-sys-grid { spacing: 9px; }
+.nexnotch-sys-stat { background-color: #1C1C1E; border-radius: 22px; padding: 13px 14px; spacing: 5px; }
+.nexnotch-sys-stat-label { color: #A1A1A6; font-size: 11px; font-weight: 500; }
+.nexnotch-sys-stat-value { color: white; font-size: 25px; font-weight: 600; letter-spacing: -0.5px; font-feature-settings: "tnum"; }
+.nexnotch-sys-stat-value.good { color: #30D158; }
+.nexnotch-sys-stat-value.bad { color: #FF453A; }
+.nexnotch-sys-stat-sub { color: #A1A1A6; font-size: 11px; }
+.nexnotch-sys-bar {
+    height: 4px;
+    -barlevel-height: 4px;
+    -barlevel-background-color: #2C2C2E;
+    -barlevel-overdrive-separator-width: 0;
+}
+.nexnotch-sys-bar.storage { height: 5px; -barlevel-height: 5px; margin-left: 27px; margin-bottom: 11px; }
+.nexnotch-sys-list { padding: 4px 16px; }
+.nexnotch-sys-row { height: 41px; border-bottom: 1px solid #2C2C2E; color: white; font-size: 14px; }
+.nexnotch-sys-row.last { border-bottom-width: 0; }
+.nexnotch-sys-row-left { spacing: 11px; }
+.nexnotch-sys-row-icon { icon-size: 16px; }
+.nexnotch-sys-row-value { color: #A1A1A6; font-size: 14px; font-feature-settings: "tnum"; }
+.nexnotch-sys-row-value.warn { color: #FF9F0A; }
+
+/* Limits */
+.nexnotch-claude { spacing: 14px; }
+.nexnotch-claude-cards { spacing: 9px; }
+.nexnotch-claude-card { background-color: #1C1C1E; border-radius: 23px; padding: 16px 18px; spacing: 16px; }
+.nexnotch-claude-pct { color: white; font-size: 18px; font-weight: 600; font-feature-settings: "tnum"; }
+.nexnotch-claude-text { spacing: 4px; }
+.nexnotch-claude-title { color: white; font-size: 15px; font-weight: 600; }
+.nexnotch-claude-reset { font-size: 12px; font-feature-settings: "tnum"; }
+.nexnotch-claude-msg { padding: 22px; spacing: 5px; }
+.nexnotch-claude-footer { padding: 0 7px; }
+.nexnotch-claude-footer-label { color: #A1A1A6; font-size: 11px; }
+.nexnotch-pill-btn-box { spacing: 5px; }
+.nexnotch-pill-btn-icon { icon-size: 13px; }
+
+/* Calendar */
+.nexnotch-cal { spacing: 9px; }
+.nexnotch-cal-month { width: 241px; padding: 13px 14px 11px; spacing: 1.8px; }
+.nexnotch-cal-month-header { padding-bottom: 5px; }
+.nexnotch-cal-month-name { color: #FF453A; font-size: 14px; font-weight: 600; }
+.nexnotch-cal-month-year { color: white; font-size: 14px; font-weight: 600; }
+.nexnotch-cal-nav { width: 29px; height: 29px; border-radius: 14px; color: #FF453A; }
+.nexnotch-cal-nav:hover { background-color: #2C2C2E; }
+.nexnotch-cal-nav StIcon { icon-size: 14px; }
+.nexnotch-cal-dow { color: #8E8E93; font-size: 10px; font-weight: 600; height: 20px; text-align: center; }
+.nexnotch-cal-cell { height: 31px; }
+.nexnotch-cal-day { width: 27px; height: 27px; border-radius: 14px; color: #E5E5EA; font-size: 13px; font-feature-settings: "tnum"; }
+.nexnotch-cal-day.today { background-color: #FF453A; color: white; font-weight: 600; }
+.nexnotch-cal-dot { width: 4px; height: 4px; border-radius: 1.8px; background-color: #0A84FF; margin-top: 0.9px; }
+.nexnotch-cal-agenda { padding: 14px 16px; spacing: 7px; }
+.nexnotch-cal-empty { spacing: 9px; }
+.nexnotch-cal-empty-icon { icon-size: 31px; color: #636366; }
+.nexnotch-cal-empty-title { color: white; font-size: 14px; font-weight: 600; }
+.nexnotch-cal-agenda-scroll { max-height: 225px; }
+.nexnotch-cal-rows { spacing: 1.8px; }
+.nexnotch-cal-row { spacing: 11px; height: 36px; border-bottom: 1px solid #2C2C2E; }
+.nexnotch-cal-when { color: #A1A1A6; font-size: 12px; font-feature-settings: "tnum"; min-width: 83px; }
+.nexnotch-cal-title { color: white; font-size: 14px; }
+
+/* Notes (Scratch) */
+.nexnotch-scratch { spacing: 14px; }
+.nexnotch-scratch-header { padding: 0 7px; spacing: 7px; }
+.nexnotch-pill-btn.yellow { background-color: #FFD60A; color: black; font-weight: 600; }
+.nexnotch-pill-btn.yellow:hover { background-color: #FFE14D; }
+.nexnotch-scratch-card { padding: 14px 16px; spacing: 9px; }
+.nexnotch-scratch-empty { color: white; font-size: 14px; padding: 4px 0 7px; }
+.nexnotch-scratch-scroll { max-height: 198px; }
+.nexnotch-scratch-row { spacing: 11px; padding: 7px 0; border-bottom: 1px solid #2C2C2E; }
+.nexnotch-scratch-title { color: white; font-size: 14px; font-weight: 500; }
+.nexnotch-scratch-preview { color: #A1A1A6; font-size: 12px; }
+.nexnotch-scratch-time { color: #A1A1A6; font-size: 11px; font-feature-settings: "tnum"; }
+.nexnotch-scratch-foot { border-top: 1px solid #2C2C2E; padding-top: 9px; }
+.nexnotch-scratch-hint { color: #A1A1A6; font-size: 11px; }
+
+/* segmented control (weather locations, timer presets) */
+.nexnotch-segmented { padding: 1.8px; spacing: 1.8px; background-color: #1C1C1E; border-radius: 9px; }
+.nexnotch-segment { height: 27px; min-width: 76px; padding: 0 9px; border-radius: 7px; color: #E5E5EA; font-size: 12px; font-weight: 500; }
+.nexnotch-segment:hover { background-color: #2C2C2E; }
+.nexnotch-segment:checked { background-color: #48484A; color: white; font-weight: 600; }
+
+/* Weather */
+.nexnotch-weather { spacing: 14px; }
+.nexnotch-weather-top { spacing: 9px; }
+.nexnotch-weather-hero { padding: 14px 18px; min-height: 124px; }
+.nexnotch-weather-place { spacing: 5px; }
+.nexnotch-weather-pin { icon-size: 11px; color: white; }
+.nexnotch-weather-icon { icon-size: 36px; color: #C7C7CC; }
+.nexnotch-weather-temp { color: white; font-size: 65px; font-weight: 300; letter-spacing: -2px; }
+.nexnotch-weather-hl { color: #A1A1A6; font-size: 12px; font-feature-settings: "tnum"; padding-bottom: 9px; }
+.nexnotch-weather-tiles { width: 270px; spacing: 9px; }
+.nexnotch-weather-tile-row { spacing: 9px; }
+.nexnotch-weather-tile { background-color: #1C1C1E; border-radius: 18px; padding: 11px 13px; spacing: 4px; }
+.nexnotch-weather-tile-label { color: #A1A1A6; font-size: 10px; font-weight: 600; letter-spacing: 0.4px; }
+.nexnotch-weather-tile-value-box { spacing: 4px; }
+.nexnotch-weather-tile-value { color: white; font-size: 20px; font-weight: 500; }
+.nexnotch-weather-tile-unit { color: #A1A1A6; font-size: 12px; padding-bottom: 3px; }
+.nexnotch-weather-days { padding: 4px 18px; }
+.nexnotch-weather-day { height: 43px; spacing: 11px; border-bottom: 1px solid #2C2C2E; font-feature-settings: "tnum"; }
+.nexnotch-weather-day.last { border-bottom-width: 0; }
+.nexnotch-weather-day-name { color: white; font-size: 14px; font-weight: 600; min-width: 65px; }
+.nexnotch-weather-day-icon { icon-size: 20px; color: #C7C7CC; min-width: 32px; }
+.nexnotch-weather-day-min { color: #A1A1A6; font-size: 14px; min-width: 36px; text-align: right; }
+.nexnotch-weather-day-max { color: white; font-size: 14px; min-width: 36px; }
+.nexnotch-weather-range { height: 13px; }
+.nexnotch-weather-msg { padding: 22px; spacing: 5px; }
+
+/* Timer */
+.nexnotch-pomo { spacing: 14px; }
+.nexnotch-pomo-main { spacing: 50px; }
+.nexnotch-pomo-round {
+    width: 72px; height: 72px; border-radius: 36px;
+    background-color: #333336; color: white; font-size: 14px; font-weight: 500;
+    border: 2px solid black; box-shadow: 0 0 0 2px #333336;
+}
+.nexnotch-pomo-round:hover { background-color: #3D3D40; }
+.nexnotch-pomo-round.go { background-color: #0E3A1C; color: #30D158; font-weight: 600; box-shadow: 0 0 0 2px #0E3A1C; }
+.nexnotch-pomo-round.go:hover { background-color: #134A25; }
+.nexnotch-pomo-round.hold { background-color: #3A2A0E; color: #FF9F0A; font-weight: 600; box-shadow: 0 0 0 2px #3A2A0E; }
+.nexnotch-pomo-round.hold:hover { background-color: #4A3612; }
+.nexnotch-pomo-big { color: white; font-size: 47px; font-weight: 300; letter-spacing: -1.4px; font-feature-settings: "tnum"; }
+.nexnotch-pomo-state { color: #A1A1A6; font-size: 12px; }
+.nexnotch-pomo-foot { spacing: 5px; }
+.nexnotch-pomo-dot { width: 7px; height: 7px; border-radius: 4px; background-color: #48484A; }
+.nexnotch-pomo-dot:checked { background-color: #FF9F0A; }
+.nexnotch-pomo-cycles { color: #A1A1A6; font-size: 12px; padding-left: 5px; }
+.nexnotch-pill-btn.small { height: 23px; padding: 0 9px; border-radius: 12px; font-size: 11px; margin-left: 4px; }
+
+/* Water (new layout) */
+.nexnotch-water { spacing: 9px; }
+.nexnotch-water-main { padding: 16px 18px 11px; spacing: 13px; }
+.nexnotch-water-top { spacing: 16px; }
+.nexnotch-water-count { color: white; font-size: 29px; font-weight: 600; font-feature-settings: "tnum"; }
+.nexnotch-water-of { color: #A1A1A6; font-size: 11px; }
+.nexnotch-water-side { spacing: 4px; }
+.nexnotch-water-btns { spacing: 7px; padding-top: 7px; }
+.nexnotch-water-drink {
+    height: 36px; padding: 0 16px; border-radius: 18px;
+    background-color: #64D2FF; color: black; font-size: 13px; font-weight: 600;
+}
+.nexnotch-water-drink:hover { background-color: #8FE0FF; }
+.nexnotch-water-drink-icon { icon-size: 14px; color: black; }
+.nexnotch-water-settings { width: 36px; height: 36px; border-radius: 18px; background-color: #2C2C2E; color: white; }
+.nexnotch-water-settings:hover { background-color: #3A3A3C; }
+.nexnotch-water-settings StIcon { icon-size: 16px; }
+.nexnotch-water-reminders { border-top: 1px solid #2C2C2E; padding-top: 9px; }
+.nexnotch-water-reminders-title { color: white; font-size: 14px; }
+.nexnotch-water-next { color: #A1A1A6; font-size: 11px; }
+.nexnotch-water-chart { width: 238px; padding: 14px 16px 13px; spacing: 9px; }
+.nexnotch-water-chart-status { color: #A1A1A6; font-size: 11px; }
+.nexnotch-water-chart-body { spacing: 7px; }
+.nexnotch-water-bars { height: 106px; }
+.nexnotch-water-axis { width: 13px; height: 106px; color: #8E8E93; font-size: 10px; font-feature-settings: "tnum"; }
+.nexnotch-water-hours { color: #8E8E93; font-size: 10px; font-feature-settings: "tnum"; }
+.nexnotch-water-axis-gap { width: 20px; }
+
+/* Shelf (new layout) */
+.nexnotch-shelf { spacing: 14px; }
+.nexnotch-shelf-head { padding: 0 7px; }
+.nexnotch-shelf-title-box { spacing: 7px; }
+.nexnotch-shelf-count { color: #A1A1A6; font-size: 12px; font-weight: 500; padding-bottom: 1.8px; }
+.nexnotch-shelf-grid { spacing: 9px; }
+.nexnotch-shelf-row { spacing: 9px; padding: 0; }
+.nexnotch-shelf-scroll { max-height: 270px; }
+.nexnotch-shelf-tile { padding: 0 9px 13px; border-radius: 20px; background-color: #1C1C1E; }
+.nexnotch-shelf-tile:hover { background-color: #232326; }
+.nexnotch-shelf-icon { margin-bottom: 7px; }
+.nexnotch-shelf-name { color: white; font-size: 12px; font-weight: 600; padding-top: 0; max-width: 94px; }
+.nexnotch-shelf-sub { color: #A1A1A6; font-size: 10px; padding-top: 1.8px; }
+.nexnotch-shelf-act {
+    width: 20px; height: 20px; border-radius: 10px; margin: 7px;
+    background-color: #3A3A3C; color: #E5E5EA;
+}
+.nexnotch-shelf-act:hover { background-color: #48484A; }
+.nexnotch-shelf-act StIcon { icon-size: 9px; }
+.nexnotch-shelf-drop {
+    border-radius: 20px; padding: 32px 11px 0; spacing: 7px;
+    border: 1.5px solid #48484A; color: #A1A1A6;
+}
+.nexnotch-shelf-drop-icon { icon-size: 20px; color: #A1A1A6; }
+.nexnotch-shelf-drop-label { color: #A1A1A6; font-size: 11px; text-align: center; }
+.nexnotch-shelf-hint { color: #A1A1A6; font-size: 11px; }
+.nexnotch-drop-zone.tab { height: 117px; padding-top: 27px; }
+
+/* Quick (new layout) */
+.nexnotch-quick { spacing: 13px; }
+.nexnotch-quick-sliders { spacing: 9px; padding: 0; }
+.nexnotch-quick-slider-row { spacing: 7px; }
+.nexnotch-quick-slider {
+    height: 43px;
+    -barlevel-height: 43px;
+    -barlevel-background-color: #2C2C2E;
+    -barlevel-active-background-color: white;
+    -barlevel-overdrive-color: #FF9F0A;
+    -barlevel-overdrive-separator-width: 0;
+    -slider-handle-radius: 0px;
+    -slider-handle-border-width: 0;
+}
+.nexnotch-quick-slider-icon { icon-size: 18px; padding-left: 14px; }
+.nexnotch-quick-slider-more { width: 43px; height: 43px; border-radius: 22px; background-color: #2C2C2E; color: white; }
+.nexnotch-quick-slider-more:hover { background-color: #3A3A3C; }
+.nexnotch-quick-grid { spacing: 9px; }
+.nexnotch-quick-big { background-color: #1C1C1E; border-radius: 25px; padding: 13px; spacing: 7px; }
+.nexnotch-quick-big-row { spacing: 7px; }
+.nexnotch-quick-big-item { spacing: 9px; min-height: 58px; }
+.nexnotch-quick-disc { width: 43px; height: 43px; border-radius: 22px; background-color: #3A3A3C; color: white; }
+.nexnotch-quick-disc:hover { background-color: #48484A; }
+.nexnotch-quick-disc:checked { background-color: #0A84FF; background-color: -st-accent-color; }
+.nexnotch-quick-big-icon { icon-size: 20px; }
+.nexnotch-quick-big-title { color: white; font-size: 12px; font-weight: 600; }
+.nexnotch-quick-big-sub { color: #A1A1A6; font-size: 11px; }
+.nexnotch-quick-smalls { spacing: 9px; }
+.nexnotch-quick-small-row { spacing: 9px; }
+.nexnotch-quick-small {
+    height: 49px; border-radius: 23px; padding: 13px 14px;
+    background-color: #1C1C1E; color: white; text-align: left;
+}
+.nexnotch-quick-small:hover { background-color: #26262A; }
+.nexnotch-quick-small:checked { background-color: white; color: black; }
+.nexnotch-quick-small-icon { icon-size: 20px; }
+.nexnotch-quick-small-title { font-size: 12px; font-weight: 600; }
+.nexnotch-quick-chips { spacing: 7px; }
+.nexnotch-quick-chip {
+    height: 27px; padding: 0 11px; border-radius: 14px; spacing: 5px;
+    background-color: #1C1C1E; color: #A1A1A6; font-size: 11px;
+}
+.nexnotch-quick-chip.active { color: #FF9F0A; }
+.nexnotch-quick-chip.device { color: #E5E5EA; }
+.nexnotch-quick-chip.low { color: #FF453A; }
+.nexnotch-quick-chip-icon { icon-size: 13px; }
+.nexnotch-quick-actions { spacing: 13px; padding: 0; }
+.nexnotch-quick-power { width: 43px; height: 43px; border-radius: 22px; background-color: #1C1C1E; color: white; }
+.nexnotch-quick-power:hover { background-color: #2C2C2E; }
+.nexnotch-quick-power.danger { background-color: #3A1210; color: #FF453A; }
+.nexnotch-quick-power.armed, .nexnotch-quick-power.armed:hover { background-color: #FF453A; color: white; }
+.nexnotch-quick-power-icon { icon-size: 18px; }
+
+.nexnotch-quick-big-label { border-radius: 14px; padding: 4px 6px; }
+.nexnotch-quick-big-label:hover { background-color: rgba(255, 255, 255, 0.06); }
+.nexnotch-quick-chevron { icon-size: 13px; color: #8E8E93; }

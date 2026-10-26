@@ -10,7 +10,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {Notch} from './notch.js';
 
-const EAR_PX = 14;   // radius of the concave top corners
+const EAR_PX = 13;   // radius of the concave top corners
 
 export default class NexNotchExtension extends Extension {
     enable() {

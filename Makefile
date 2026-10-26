@@ -2,7 +2,7 @@ UUID    := nexnotch@nexvar
 PREFIX  := $(HOME)/.local/share/gnome-shell/extensions
 DEST    := $(PREFIX)/$(UUID)
 FILES   := metadata.json extension.js notch.js prefs.js stylesheet.css \
-           modules schemas
+           modules schemas icons
 
 .PHONY: all compile-schemas install uninstall pack reload enable disable logs clean
 
@@ -22,6 +22,7 @@ pack:
 	rm -f $(UUID).shell-extension.zip schemas/gschemas.compiled
 	gnome-extensions pack \
 	    --extra-source=modules \
+	    --extra-source=icons \
 	    --extra-source=README.md \
 	    --extra-source=LICENSE \
 	    --schema=schemas/org.gnome.shell.extensions.nexnotch.gschema.xml \

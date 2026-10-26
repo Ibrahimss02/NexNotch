@@ -36,10 +36,11 @@ export default class NexNotchPrefs extends ExtensionPreferences {
 
         const waterGroup = new Adw.PreferencesGroup({
             title: 'Drink water',
-            description: 'A cup in the collapsed pill drains over the interval, then reminds you and refills.',
+            description: 'The Water tab tracks the cups you drink today; reminders come on the interval.',
         });
-        waterGroup.add(this._boolRow(settings, 'show-water', 'Drink-water reminder'));
+        waterGroup.add(this._boolRow(settings, 'show-water', 'Drink-water reminders'));
         waterGroup.add(this._intRow(settings, 'water-interval', 'Remind every (min)', 1, 120, 1));
+        waterGroup.add(this._intRow(settings, 'water-goal', 'Daily goal (cups)', 1, 30, 1));
         page.add(waterGroup);
 
         const perfGroup = new Adw.PreferencesGroup({title: 'Performance'});
@@ -63,7 +64,7 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         sizeGroup.add(this._intRow(settings, 'collapsed-height', 'Collapsed height',   24,  56, 1));
         sizeGroup.add(this._intRow(settings, 'expanded-width',   'Expanded width',    420, 960, 10));
         sizeGroup.add(this._intRow(settings, 'expanded-height',  'Expanded height',   200, 480, 10));
-        sizeGroup.add(this._intRow(settings, 'corner-radius',    'Corner radius',       0,  32, 1));
+        sizeGroup.add(this._intRow(settings, 'corner-radius',    'Corner radius',       0,  60, 1));
         page.add(sizeGroup);
 
         const colorGroup = new Adw.PreferencesGroup({
