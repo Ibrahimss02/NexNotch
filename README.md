@@ -113,7 +113,7 @@ gnome-extensions install --force nexnotch@nexvar.shell-extension.zip
 ### Update / uninstall
 
 ```sh
-git pull && make install     # update, then log out / in
+git pull && make install     # update, then log out / in (NexNotch tells you when a new release is out)
 make uninstall               # remove
 ```
 
@@ -154,6 +154,7 @@ nexnotch@nexvar/
 │   ├── system.js          # /proc stats, CPU sensor, battery
 │   ├── mpris.js           # media players (MPRIS)
 │   ├── lyrics.js          # synced lyrics from lrclib.net (opt-in, cached)
+│   ├── updates.js         # daily check for a newer GitHub release
 │   ├── history.js         # GNOME notification history
 │   ├── notifications.js   # notification peek
 │   ├── power.js           # charger plug/unplug (UPower)
@@ -180,6 +181,7 @@ nexnotch@nexvar/
 
 - **Wayland needs a log out / log in** after installing or updating — GNOME can't reload extension code in a running session.
 - **Lyrics** are off until you press *Lyrics* on the player; turning them on sends the track name to [lrclib.net](https://lrclib.net).
+- **Update check**: once a day NexNotch asks GitHub for the latest release and shows a notification when there's a newer one. Nothing is downloaded or installed. Turn it off in Preferences → General → Updates.
 - **Shelf drag-and-drop:** on Wayland GNOME Shell can't receive dropped files itself, so while you drag, NexNotch briefly runs an invisible helper window (`modules/dropzone.js`, GJS + GTK 4) over the notch to catch the drop. Dragging files *out* of the shelf isn't possible; use click to open or Copy.
 - **Evolution Data Server** sometimes doesn't auto-start; `extension.js` starts `evolution-source-registry` once at enable as a workaround.
 

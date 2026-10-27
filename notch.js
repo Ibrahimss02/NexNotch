@@ -31,6 +31,7 @@ import {PowerWatcher, State as PowerState} from './modules/power.js';
 import {WaterReminder, CUP_ICON} from './modules/water.js';
 import {Shelf} from './modules/shelf.js';
 import {BatteryGlyph, Waveform} from './modules/ui.js';
+import {UpdateChecker} from './modules/updates.js';
 
 const HOVER_DELAY_MS    = 180;
 const COLLAPSE_DELAY_MS = 300;
@@ -489,6 +490,8 @@ class Notch extends St.Widget {
         this._updateBatteryIcon();
         this._watchCapture();
         this._watchStatus();
+        this._updates = new UpdateChecker(this._settings, this._extension.metadata);
+        this._updates.start();
     }
 
     /* Mirror GNOME's own (hidden) top-bar recording/sharing indicators:
@@ -719,6 +722,8 @@ class Notch extends St.Widget {
     stop() {
         this._stopped = true;
         if (this._lyricTimer) { GLib.source_remove(this._lyricTimer); this._lyricTimer = 0; }
+        this._updates?.stop();
+        this._updates = null;
         this._springTl?.stop();
         this._clearHoverTimeout();
         this._clearCollapseTimeout();

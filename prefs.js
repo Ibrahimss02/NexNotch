@@ -53,6 +53,11 @@ export default class NexNotchPrefs extends ExtensionPreferences {
             'Hide built-in GNOME clock (replace with notch)'));
         page.add(panelGroup);
 
+        const updateGroup = new Adw.PreferencesGroup({title: 'Updates'});
+        updateGroup.add(this._boolRow(settings, 'check-updates', 'Check for updates',
+            `Once a day, asks GitHub for the latest release and notifies you of a newer one. Installed: ${this.metadata['version-name']}`));
+        page.add(updateGroup);
+
         return page;
     }
 
