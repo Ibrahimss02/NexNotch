@@ -293,6 +293,9 @@ export const QuickHub = GObject.registerClass({
         if (!item?.menu) return;
         this.closeSubmenu();
         const menu = item.menu;
+        /* its manager would grab input for the hidden menu actor and close
+           the menu on any click outside it, which is all of the notch */
+        item._menuManager?.removeMenu(menu);
         menu.isOpen = true;
         menu.emit('open-state-changed', true);
         const closedId = menu.connect('open-state-changed', (_m, open) => {
@@ -311,6 +314,7 @@ export const QuickHub = GObject.registerClass({
         menu.box.get_parent()?.remove_child(menu.box);
         menu.actor.add_child(menu.box);
         if (menu.isOpen) { menu.isOpen = false; menu.emit('open-state-changed', false); }
+        s.item._menuManager?.addMenu(menu);
     }
 
     _buildSubmenu() {

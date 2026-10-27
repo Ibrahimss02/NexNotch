@@ -1945,7 +1945,7 @@ class Notch extends St.Widget {
         /* Fit size to actual text (multi-line messages, short toasts, etc.) */
         const fit = () => {
             if (!this._peekActive || this._peekLayer !== peek) return;
-            const width = 342;
+            const width = 440;
             const [, natH] = peek.get_preferred_height(width - 40);
             const h = Math.max(72, Math.min(240, natH + 22));
             this.ease({width, height: h, duration: 260, mode: Clutter.AnimationMode.EASE_OUT_QUINT});
