@@ -51,6 +51,10 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         const panelGroup = new Adw.PreferencesGroup({title: 'Panel integration'});
         panelGroup.add(this._boolRow(settings, 'hide-datemenu',
             'Hide built-in GNOME clock (replace with notch)'));
+        panelGroup.add(this._boolRow(settings, 'reserve-space', 'Reserve space for the notch',
+            'Maximized windows stop below the collapsed notch. Turn off to let windows use the full height (with the top bar hidden).'));
+        panelGroup.add(this._boolRow(settings, 'island-when-covered', 'Hide when a window is behind the notch',
+            'Hovering its spot at the top still opens it, as a floating island, and notifications still show.'));
         page.add(panelGroup);
 
         const updateGroup = new Adw.PreferencesGroup({title: 'Updates'});

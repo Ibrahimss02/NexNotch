@@ -1,0 +1,25 @@
+[Desktop Entry]
+Type=Application
+Name=NexNotch
+GenericName=Dynamic Island
+Comment=A MacBook-notch-style hub for KDE Plasma
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/nexnotch-kde
+Icon=io.nexvar.NexNotch
+Categories=Utility;
+Keywords=notch;dynamic island;music;notifications;
+StartupNotify=false
+NoDisplay=false
+X-KDE-StartupNotify=false
+Actions=Settings;Toggle;Quit;
+
+[Desktop Action Settings]
+Name=Settings
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/nexnotch-kde --settings
+
+[Desktop Action Toggle]
+Name=Toggle the notch
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/nexnotch-kde --toggle
+
+[Desktop Action Quit]
+Name=Quit
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/nexnotch-kde --quit

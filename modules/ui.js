@@ -4,6 +4,17 @@ import Clutter from 'gi://Clutter';
 
 /* Small drawn widgets shared by the pill, the peeks and the tabs. */
 
+/* St.BoxLayout's `vertical` was replaced by `orientation` in GNOME 48 and
+   removed in 51; spread this into a vertical box's params. */
+export const VERTICAL = (() => {
+    try {
+        new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL}).destroy();
+        return {orientation: Clutter.Orientation.VERTICAL};
+    } catch (_) {
+        return {vertical: true};
+    }
+})();
+
 const rgba = hex => {
     const n = parseInt(hex.slice(1), 16);
     return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];

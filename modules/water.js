@@ -6,7 +6,7 @@ import Clutter from 'gi://Clutter';
 
 import {Switch} from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {Ring} from './ui.js';
+import {Ring, VERTICAL} from './ui.js';
 
 const LOG_FILE = GLib.build_filenamev([GLib.get_user_data_dir(), 'nexnotch', 'water.json']);
 const CHART_HOURS = 11;
@@ -130,20 +130,20 @@ export const WaterReminder = GObject.registerClass({
         const plural = n => `${n} cup${n === 1 ? '' : 's'}`;
 
         const page = new St.BoxLayout({style_class: 'nexnotch-water', x_expand: true});
-        const main = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-water-main', vertical: true, x_expand: true});
+        const main = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-water-main', ...VERTICAL, x_expand: true});
         page.add_child(main);
 
         const top = new St.BoxLayout({style_class: 'nexnotch-water-top'});
         const wrap = new St.Widget({layout_manager: new Clutter.BinLayout(), width: 97, height: 97});
         wrap.add_child(new Ring({size: 97, thickness: 11, track: '#0B3340', color: '#64D2FF', frac: cups / goal,
             accessibleName: `${cups} of ${goal} cups`}));
-        const count = new St.BoxLayout({vertical: true, x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
+        const count = new St.BoxLayout({...VERTICAL, x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         count.add_child(new St.Label({text: String(cups), style_class: 'nexnotch-water-count', x_align: Clutter.ActorAlign.CENTER}));
         count.add_child(new St.Label({text: `of ${plural(goal)}`, style_class: 'nexnotch-water-of', x_align: Clutter.ActorAlign.CENTER}));
         wrap.add_child(count);
         top.add_child(wrap);
 
-        const side = new St.BoxLayout({vertical: true, style_class: 'nexnotch-water-side', y_align: Clutter.ActorAlign.CENTER});
+        const side = new St.BoxLayout({...VERTICAL, style_class: 'nexnotch-water-side', y_align: Clutter.ActorAlign.CENTER});
         side.add_child(new St.Label({text: 'Water', style_class: 'nexnotch-section-title'}));
         side.add_child(new St.Label({text: cups >= goal ? 'Goal reached today' : `${plural(goal - cups)} to go today`, style_class: 'nexnotch-muted'}));
         const btns = new St.BoxLayout({style_class: 'nexnotch-water-btns'});
@@ -162,7 +162,7 @@ export const WaterReminder = GObject.registerClass({
         main.add_child(top);
 
         const reminders = new St.BoxLayout({style_class: 'nexnotch-water-reminders', x_expand: true});
-        const label = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+        const label = new St.BoxLayout({...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         label.add_child(new St.Label({text: 'Reminders', style_class: 'nexnotch-water-reminders-title'}));
         if (on) {
             const mins = Math.max(1, Math.ceil(this.level() * this._settings.get_int('water-interval')));
@@ -182,7 +182,7 @@ export const WaterReminder = GObject.registerClass({
     _buildChart(cups) {
         const data = this.hourly();
         const peak = Math.max(4, Math.ceil(Math.max(...data.map(d => d.cups)) / 2) * 2);
-        const chart = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-water-chart', vertical: true});
+        const chart = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-water-chart', ...VERTICAL});
         const head = new St.BoxLayout({x_expand: true});
         head.add_child(new St.Label({text: 'TODAY', style_class: 'nexnotch-caps', x_expand: true}));
         head.add_child(new St.Label({text: cups ? `${cups} cup${cups === 1 ? '' : 's'} logged` : 'Nothing logged yet', style_class: 'nexnotch-water-chart-status'}));
@@ -191,7 +191,7 @@ export const WaterReminder = GObject.registerClass({
         const bars = new St.DrawingArea({style_class: 'nexnotch-water-bars', x_expand: true});
         bars.connect('repaint', () => this._paintBars(bars, data, peak));
         body.add_child(bars);
-        const axis = new St.BoxLayout({style_class: 'nexnotch-water-axis', vertical: true});
+        const axis = new St.BoxLayout({style_class: 'nexnotch-water-axis', ...VERTICAL});
         axis.add_child(new St.Label({text: String(peak), y_expand: true, y_align: Clutter.ActorAlign.START}));
         axis.add_child(new St.Label({text: String(peak / 2), y_expand: true, y_align: Clutter.ActorAlign.CENTER}));
         axis.add_child(new St.Label({text: '0', y_expand: true, y_align: Clutter.ActorAlign.END}));

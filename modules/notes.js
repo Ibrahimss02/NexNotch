@@ -5,6 +5,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {VERTICAL} from './ui.js';
 
 const DEFAULT_NOTES_DIR = GLib.build_filenamev([
     GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOCUMENTS) ?? GLib.get_home_dir(), 'NexNotch Notes']);
@@ -103,7 +104,7 @@ export const Notes = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-notes', vertical: true, x_expand: true, y_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-notes', ...VERTICAL, x_expand: true, y_expand: true});
 
         const header = new St.BoxLayout({style_class: 'nexnotch-notes-header', x_expand: true});
         header.add_child(new St.Label({text: 'Notes', style_class: 'nexnotch-notes-heading', x_expand: true}));
@@ -116,7 +117,7 @@ export const Notes = GObject.registerClass({
         box.add_child(header);
 
         const scroll = new St.ScrollView({style_class: 'nexnotch-notes-scroll', x_expand: true, y_expand: true});
-        const list = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-notes-list'});
+        const list = new St.BoxLayout({...VERTICAL, x_expand: true, style_class: 'nexnotch-notes-list'});
         for (const draft of this._drafts) list.add_child(this._draftCard(draft));
         scroll.set_child(list);
         box.add_child(scroll);
@@ -140,7 +141,7 @@ export const Notes = GObject.registerClass({
     }
 
     _draftCard(draft) {
-        const card = new St.BoxLayout({style_class: 'nexnotch-notes-card', vertical: true, x_expand: true});
+        const card = new St.BoxLayout({style_class: 'nexnotch-notes-card', ...VERTICAL, x_expand: true});
 
         const titleEntry = new St.Entry({
             style_class: 'nexnotch-notes-title-entry',

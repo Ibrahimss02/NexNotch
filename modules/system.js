@@ -5,6 +5,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
 import {BarLevel} from 'resource:///org/gnome/shell/ui/barLevel.js';
+import {VERTICAL} from './ui.js';
 
 const CPU_SENSORS = ['coretemp', 'k10temp', 'zenpower', 'cpu_thermal'];
 const BATTERY_REFRESH_US = 30 * 1000 * 1000;
@@ -353,12 +354,12 @@ export const SystemMonitor = GObject.registerClass({
 
     render() {
         const s = this._stats;
-        const box = new St.BoxLayout({style_class: 'nexnotch-sys', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-sys', ...VERTICAL, x_expand: true});
 
         const grid = new St.BoxLayout({style_class: 'nexnotch-sys-grid', x_expand: true});
         grid.layout_manager.homogeneous = true;
         const stat = (label, value, {bar = null, color = null, sub = '', valueCls = ''} = {}) => {
-            const card = new St.BoxLayout({style_class: 'nexnotch-sys-stat', vertical: true, x_expand: true});
+            const card = new St.BoxLayout({style_class: 'nexnotch-sys-stat', ...VERTICAL, x_expand: true});
             card.add_child(new St.Label({text: label, style_class: 'nexnotch-sys-stat-label'}));
             card.add_child(new St.Label({text: value, style_class: `nexnotch-sys-stat-value ${valueCls}`}));
             if (bar !== null) {
@@ -383,7 +384,7 @@ export const SystemMonitor = GObject.registerClass({
         grid.add_child(stat('Uptime', this._upFmt(s.uptime), {sub: s.swap > 0 ? `Swap ${s.swap.toFixed(0)}%` : 'No swap in use'}));
         box.add_child(grid);
 
-        const list = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-sys-list', vertical: true, x_expand: true});
+        const list = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-sys-list', ...VERTICAL, x_expand: true});
         const icon = (names, color) => new St.Icon({gicon: Gio.ThemedIcon.new_from_names(names),
             style_class: 'nexnotch-sys-row-icon', style: `color: ${color};`, y_align: Clutter.ActorAlign.CENTER});
         const row = (names, color, label, value, last = false) => {
@@ -405,7 +406,7 @@ export const SystemMonitor = GObject.registerClass({
         if (s.disk_total > 0) {
             const free = s.disk_total - s.disk_used;
             const low = free / s.disk_total < 0.1;
-            const storage = new St.BoxLayout({style_class: 'nexnotch-sys-storage', vertical: true, x_expand: true});
+            const storage = new St.BoxLayout({style_class: 'nexnotch-sys-storage', ...VERTICAL, x_expand: true});
             const head = row(['drive-harddisk-solidstate-symbolic', 'drive-harddisk-symbolic'], '#FF9F0A', 'Storage',
                 `${this._gbFmt(s.disk_used)} of ${this._gbFmt(s.disk_total)} · ${this._gbFmt(free)} free`, true);
             if (low) head.get_last_child().add_style_class_name('warn');

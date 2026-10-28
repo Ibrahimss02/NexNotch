@@ -1316,3 +1316,10 @@
 .nexnotch-quick-big-label { border-radius: 14px; padding: 4px 6px; }
 .nexnotch-quick-big-label:hover { background-color: rgba(255, 255, 255, 0.06); }
 .nexnotch-quick-chevron { icon-size: 13px; color: #8E8E93; }
+
+/* Quick tab: NexNotch's own preferences, smaller than the round actions */
+.nexnotch-quick-power.small { width: 31px; height: 31px; border-radius: 16px; color: #A1A1A6; }
+.nexnotch-quick-power.small .nexnotch-quick-power-icon { icon-size: 14px; }
+
+/* the hidden island, hovered: a dot before it opens */
+.nexnotch-island-dot { width: 22px; height: 22px; border-radius: 11px; background-color: black; border: 1px solid rgba(255, 255, 255, 0.18); }
