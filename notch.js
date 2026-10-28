@@ -633,6 +633,15 @@ class Notch extends St.Widget {
         this._rfkill = getRfkillManager();
         this._rfkill.connectObject('notify::airplane-mode', () => this._onStatus('airplane'), this);
         this._watchPrivacy();
+        /* Caps Lock only gets the toast, no icon in the pill */
+        this._keymap = global.stage.context.get_backend().get_default_seat().get_keymap();
+        this._capsLock = this._keymap.get_caps_lock_state();
+        this._keymap.connectObject('state-changed', () => {
+            const on = this._keymap.get_caps_lock_state();
+            if (on === this._capsLock) return;
+            this._capsLock = on;
+            this._peekToggle('capslock', on);
+        }, this);
     }
 
     /* quick settings creates its indicators asynchronously */
@@ -686,6 +695,7 @@ class Notch extends St.Widget {
         if (this._privacyRetry) { GLib.source_remove(this._privacyRetry); this._privacyRetry = 0; }
         this._dndSettings?.disconnectObject(this);
         this._rfkill?.disconnectObject(this);
+        this._keymap?.disconnectObject(this);
         this._privacy?.cam?.disconnectObject(this);
         this._privacy?.mic?.disconnectObject(this);
         this._privacy = null;
@@ -1727,10 +1737,11 @@ class Notch extends St.Widget {
             onClick: () => { this._switchTab('shelf'); this._expand(); }});
     }
 
-    /* "Do Not Disturb · On" / "Airplane Mode · Off" */
+    /* "Do Not Disturb · On" / "Airplane Mode · Off" / "Caps Lock · On" */
     _peekToggle(kind, on) {
         if (!this._settings.get_boolean('show-notifications')) return;
-        const [name, iconName] = kind === 'dnd' ? ['Do Not Disturb', 'moon'] : ['Airplane Mode', 'airplane'];
+        const [name, iconName] = {dnd: ['Do Not Disturb', 'moon'], airplane: ['Airplane Mode', 'airplane'],
+            capslock: ['Caps Lock', 'capslock']}[kind];
         const row = new St.BoxLayout({style_class: `nexnotch-peek-row compact nexnotch-peek-toggle ${kind}`, x_expand: true});
         if (!on) row.add_style_class_name('off');
         const left = new St.BoxLayout({style_class: 'nexnotch-peek-toggle-name', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
@@ -1739,7 +1750,7 @@ class Notch extends St.Widget {
         left.add_child(new St.Label({text: name, y_align: Clutter.ActorAlign.CENTER}));
         row.add_child(left);
         row.add_child(new St.Label({text: on ? 'On' : 'Off', style_class: 'nexnotch-peek-toggle-state', y_align: Clutter.ActorAlign.CENTER}));
-        this._showPeek(row, {width: 252, height: this._ch, duration: POWER_PEEK_MS});
+        this._showPeek(row, {width: kind === 'capslock' ? 212 : 252, height: this._ch, duration: POWER_PEEK_MS});
     }
 
     /* camera or mic just started: which one, and the app using the mic */
@@ -1884,12 +1895,15 @@ class Notch extends St.Widget {
         });
 
         const gicon = this._resolveNotifIcon(source, notif);
-        const iconBin = new St.Bin({style_class: 'nexnotch-peek-icon-bin', y_align: Clutter.ActorAlign.CENTER});
+        const iconBin = new St.Bin({style_class: 'nexnotch-peek-icon-bin'});
         iconBin.set_child(new St.Icon({
             gicon, icon_size: iconSize,
             style_class: 'nexnotch-peek-icon',
         }));
-        peek.add_child(iconBin);
+        /* the dismiss button rides on the icon's corner, so it takes no room */
+        const iconWrap = new St.Widget({layout_manager: new Clutter.BinLayout(), y_align: Clutter.ActorAlign.CENTER});
+        iconWrap.add_child(iconBin);
+        peek.add_child(iconWrap);
 
         const textCol = new St.BoxLayout({
             vertical: true, x_expand: true, y_expand: true,
@@ -1919,11 +1933,11 @@ class Notch extends St.Widget {
 
         const dismissBtn = new St.Button({
             style_class: 'nexnotch-peek-dismiss',
-            label: '✕',
-            y_align: Clutter.ActorAlign.CENTER,
+            child: new St.Icon({icon_name: 'window-close-symbolic'}),
             accessible_name: 'Dismiss notification',
             can_focus: true,
         });
+        dismissBtn.set_position(-7, -7);
         dismissBtn.opacity = 0;
         dismissBtn.connect('clicked', () => {
             try { notif?.destroy?.(); } catch (e) { logError(e, 'nexnotch:peek:dismiss'); }
@@ -1932,7 +1946,7 @@ class Notch extends St.Widget {
         /* Stop the click from bubbling up to the peek (which would activate
            the notification on top of dismissing it). */
         dismissBtn.connect('button-release-event', () => Clutter.EVENT_STOP);
-        peek.add_child(dismissBtn);
+        iconWrap.add_child(dismissBtn);
 
         this.add_child(peek);
         this._peekLayer  = peek;

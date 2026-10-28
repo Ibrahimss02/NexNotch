@@ -939,6 +939,7 @@
 .nexnotch-peek-toggle-state { font-size: 12px; font-weight: 600; }
 .nexnotch-peek-toggle.dnd .nexnotch-peek-toggle-name, .nexnotch-peek-toggle.dnd .nexnotch-peek-toggle-state { color: #A5A4FF; }
 .nexnotch-peek-toggle.airplane .nexnotch-peek-toggle-name, .nexnotch-peek-toggle.airplane .nexnotch-peek-toggle-state { color: #FF9F0A; }
+.nexnotch-peek-toggle.capslock .nexnotch-peek-toggle-name, .nexnotch-peek-toggle.capslock .nexnotch-peek-toggle-state { color: white; }
 .nexnotch-peek-toggle.off .nexnotch-peek-toggle-name, .nexnotch-peek-toggle.off .nexnotch-peek-toggle-state { color: #A1A1A6; }
 .nexnotch-peek-row.privacy { spacing: 9px; padding: 0 14px 0 9px; }
 .nexnotch-peek-privacy-badge { width: 31px; height: 31px; border-radius: 16px; }
@@ -993,7 +994,9 @@
 .nexnotch-peek-title { color: white; font-size: 14px; font-weight: 600; }
 .nexnotch-peek-time { color: #A1A1A6; font-size: 11px; }
 .nexnotch-peek-body { color: #A1A1A6; font-size: 12px; }
-.nexnotch-peek-dismiss { color: #A1A1A6; background-color: transparent; }
+.nexnotch-peek-dismiss { width: 18px; height: 18px; padding: 0; border-radius: 10px; border: 1px solid black; background-color: #636366; color: white; }
+.nexnotch-peek-dismiss:hover { background-color: #8E8E93; }
+.nexnotch-peek-dismiss StIcon { icon-size: 9px; }
 
 /* ═══════════ Tabs ═══════════ */
 .nexnotch-card { background-color: #1C1C1E; border-radius: 23px; }
@@ -1053,7 +1056,7 @@
 .nexnotch-hist-header { padding: 1.8px 7px 0; }
 .nexnotch-hist-heading { color: white; font-size: 15px; font-weight: 600; }
 .nexnotch-hist-empty { color: #A1A1A6; font-size: 12px; padding: 9px 0 5px; }
-.nexnotch-hist-scroll { max-height: 261px; }
+.nexnotch-hist-scroll { max-height: 261px; -st-vfade-offset: 28px; }
 .nexnotch-hist-list { spacing: 7px; }
 .nexnotch-hist-card { background-color: #1C1C1E; border-radius: 20px; padding: 11px 14px 11px 11px; spacing: 11px; }
 .nexnotch-hist-card:hover { background-color: #232326; }
@@ -1061,7 +1064,8 @@
 .nexnotch-hist-title { color: white; font-size: 14px; font-weight: 600; }
 .nexnotch-hist-time { color: #A1A1A6; font-size: 11px; padding-left: 7px; }
 .nexnotch-hist-body { color: #A1A1A6; font-size: 12px; padding-top: 1.8px; }
-.nexnotch-hist-dismiss { width: 20px; height: 20px; border-radius: 10px; margin: 5px; background-color: #3A3A3C; color: #E5E5EA; }
+.nexnotch-hist-dismiss { width: 18px; height: 18px; border-radius: 10px; border: 1px solid black; background-color: #636366; color: white; }
+.nexnotch-hist-dismiss:hover { background-color: #8E8E93; }
 .nexnotch-hist-dismiss StIcon { icon-size: 9px; }
 
 /* System */

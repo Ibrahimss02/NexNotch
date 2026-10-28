@@ -112,15 +112,16 @@ export const NotificationHistory = GObject.registerClass({
 
             const dismiss = new St.Button({style_class: 'nexnotch-hist-dismiss', opacity: 0,
                 child: new St.Icon({icon_name: 'window-close-symbolic'}),
-                x_align: Clutter.ActorAlign.END, y_align: Clutter.ActorAlign.START,
                 accessible_name: 'Dismiss notification', can_focus: true});
+            dismiss.set_position(2, 2);   // on the icon's corner
             dismiss.connect('clicked', () => n.destroy());
             card.add_child(dismiss);
             card.connect('notify::hover', () => dismiss.ease({opacity: card.hover ? 255 : 0, duration: 120}));
             list.add_child(card);
         }
+        /* no visible bar (it drew under the cards); the bottom fades instead */
         const scroll = new St.ScrollView({style_class: 'nexnotch-hist-scroll', x_expand: true, y_expand: true,
-            hscrollbar_policy: St.PolicyType.NEVER, vscrollbar_policy: St.PolicyType.AUTOMATIC, overlay_scrollbars: true});
+            hscrollbar_policy: St.PolicyType.NEVER, vscrollbar_policy: St.PolicyType.EXTERNAL});
         scroll.set_child(list);
         box.add_child(scroll);
         return box;
