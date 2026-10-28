@@ -48,7 +48,6 @@ QtObject {
             property bool settled: false
             Timer { interval: 1500; running: true; onTriggered: notch.settled = true }
             covered: settled && reaching.length > 0
-            coveredFullscreen: reaching.some(w => w.fullScreen)
             onOpenSettings: page => app.showSettings(page)
         }
         Component.onCompleted: visible = true
@@ -123,7 +122,7 @@ QtObject {
         if (o.tab) { notch.switchTab(o.tab); notch.expand(); }
         if (o.peek) demoPeek(o.peek);
         /* the island states, without a real window under the notch */
-        if (o.island || o.fullscreen) { notch.covered = true; notch.coveredFullscreen = !!o.fullscreen; }
+        if (o.island) notch.covered = true;
         if (o.settings) showSettings(o.settings === true ? "" : o.settings);
         const t = Qt.createQmlObject("import QtQuick; Timer {}", app);
         t.interval = Number(o.wait ?? 1500);

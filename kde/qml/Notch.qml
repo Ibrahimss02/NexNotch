@@ -49,18 +49,15 @@ Item {
     readonly property int eh: Config.expandedHeight
     readonly property real radius: Math.round(Math.min(Config.cornerRadius, height / 2))
 
-    /* A window reaching up under the notch (full height, or fullscreen): the
-       notch lets go of the screen edge and floats as an island, rounded all
-       round. At rest it shrinks to a bare capsule — invisible over fullscreen
-       windows — yet its spot still opens it on hover, and peeks still show. */
+    /* A window behind the notch: it lets go of the screen edge and floats as
+       an island, rounded all round. At rest it hides, shrunk to a small spot
+       that still opens it on hover; peeks still show. */
     property bool covered: false
-    property bool coveredFullscreen: false
     readonly property int islandGap: 8
     readonly property int islandWidth: 120
     readonly property bool compact: covered && !expanded && !peekActive
-    readonly property bool hiddenRest: compact && coveredFullscreen
     onCompactChanged: resizeCollapsed(true)
-    opacity: hiddenRest ? 0 : 1
+    opacity: compact ? 0 : 1
     Behavior on opacity { NumberAnimation { duration: 220 } }
 
     signal openSettings(string page)
@@ -514,18 +511,13 @@ Item {
         anchors.fill: parent
         clip: true      // swiped tab content must not spill past the background
 
-        Item {
-            anchors.fill: parent
-            opacity: notch.compact ? 0 : 1
-            Behavior on opacity { NumberAnimation { duration: 160 } }
-            Pill {
-                id: pill
-                notch: notch
-                width: Math.max(notch.width, implicitWidth)
-                height: notch.ch
-                anchors.horizontalCenter: parent.horizontalCenter
-                onImplicitWidthChanged: notch.resizeCollapsed(true)
-            }
+        Pill {
+            id: pill
+            notch: notch
+            width: Math.max(notch.width, implicitWidth)
+            height: notch.ch
+            anchors.horizontalCenter: parent.horizontalCenter
+            onImplicitWidthChanged: notch.resizeCollapsed(true)
         }
 
         Item {

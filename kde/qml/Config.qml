@@ -78,7 +78,7 @@ Settings {
 
     // ——— KDE only ———
     property bool reserveSpace: true        // maximized windows stop below the collapsed notch
-    property bool islandWhenCovered: true   // a window reaching the top turns the notch into a floating island
+    property bool islandWhenCovered: true   // hidden while a window is behind it; opens as a floating island
     property bool replaceOsd: true          // volume/brightness OSD in the notch instead of Plasma's
     property var calendarFeeds: []          // [{name, url, color}] iCal (.ics) links, e.g. Google's secret address
     property string googleClientId: ""      // optional: Google Calendar + Tasks through your own OAuth client

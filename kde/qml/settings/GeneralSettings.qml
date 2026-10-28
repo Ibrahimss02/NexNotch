@@ -30,8 +30,8 @@ SettingsPage {
     SettingsSwitch { key: "autostart"; text: "Start NexNotch when I log in"; Kirigami.FormData.label: "Startup:" }
     SettingsSwitch { key: "reserveSpace"; text: "Reserve space for the notch"; Kirigami.FormData.label: "Windows:" }
     SettingsHint { text: "Maximized windows stop below the collapsed notch instead of sliding under it. Turn off to let windows use the full height." }
-    SettingsSwitch { key: "islandWhenCovered"; text: "Float as an island when a window reaches the top" }
-    SettingsHint { text: "Over a full-height window the notch detaches into a small capsule; over a fullscreen one it hides. Hovering its spot still opens it, and notifications still show." }
+    SettingsSwitch { key: "islandWhenCovered"; text: "Hide when a window is behind the notch" }
+    SettingsHint { text: "With a window reaching up under it, the notch disappears. Hovering its spot at the top still opens it, as a floating island, and notifications still show." }
     SettingsHint {
         Kirigami.FormData.label: "Panel clock:"
         color: Kirigami.Theme.textColor
