@@ -110,6 +110,29 @@ make pack                                          # builds nexnotch@nexvar.shel
 gnome-extensions install --force nexnotch@nexvar.shell-extension.zip
 ```
 
+### KDE Plasma 6 (Arch, CachyOS, Fedora KDE, Kubuntu, openSUSE…)
+
+GNOME Shell extensions can't run in Plasma, so `kde/` holds a native port: a standalone Qt 6 / QML app drawn as a layer-shell surface at the top of the screen, with the same tabs, peeks and look.
+
+```sh
+# Arch / CachyOS
+sudo pacman -S --needed cmake ninja qt6-declarative qt6-wayland layer-shell-qt kirigami \
+     kglobalaccel kguiaddons kwindowsystem kservice kio kconfig plasma-workspace plasma-pa plasma-nm bluez-qt
+git clone https://github.com/Ibrahimss02/NexNotch.git
+cd NexNotch
+make kde-install        # builds, installs to ~/.local, starts it, and starts it at every login
+```
+
+`nexnotch-kde --settings` opens the settings; `Meta+N` toggles the notch (rebind it in System Settings › Shortcuts › NexNotch). Update with `git pull && make kde-install`; remove with `make kde-uninstall`.
+
+How the GNOME-only parts map to Plasma:
+
+- **Notifications**: NexNotch registers as a watcher of Plasma's notification server, so it sees every notification and can run its actions. To keep Plasma's own popups away it holds an "app is inhibiting notifications" request while it runs (Settings › Notifications), which Plasma's bell shows like Do Not Disturb.
+- **Volume OSD**: shown in the notch; Plasma's own volume OSD is switched off while that option is on and restored when it's turned off or NexNotch quits. Plasma's **brightness** OSD can't be turned off on its own, so brightness keys show both.
+- **Calendar**: there's no GNOME Online Accounts on Plasma. Add iCal links (e.g. Google Calendar's *Secret address in iCal format*) in Settings › Calendar, or sign in to Google with your own OAuth client ID for Calendar plus Google Tasks.
+- **Quick tab**: Plasma's own volume, brightness, Wi-Fi, Bluetooth, power profile, Night Light, colour scheme, Do Not Disturb, airplane mode and session actions.
+- **Meetings**: window titles come from a small KWin script NexNotch loads while it runs.
+
 ### Update / uninstall
 
 ```sh

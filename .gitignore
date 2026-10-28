@@ -6,3 +6,5 @@ schemas/gschemas.compiled
 node_modules/
 .omx/
 .codex/
+kde/build/
+kde/compile_commands.json
