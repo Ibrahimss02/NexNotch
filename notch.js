@@ -50,6 +50,16 @@ const MAX_FLICK_TABS    = 3;
 const SCROLL_UNIT_PX    = 10;    // Clutter reports touchpad scroll in ~10 px units
 const ICONS_DIR = Gio.File.new_for_uri(import.meta.url).get_parent().get_child('icons');
 const ownIcon = name => Gio.FileIcon.new(ICONS_DIR.get_child(`${name}.svg`));
+/* window titles (a browser shows its tab's) that mean a call */
+const MEETINGS = [
+    [/^Meet\b|Google Meet/, 'Google Meet'],
+    [/\bZoom (Meeting|Webinar|Workplace)\b/i, 'Zoom'],
+    [/Microsoft Teams/i, 'Teams'],
+    [/Jitsi Meet/i, 'Jitsi'],
+    [/\bWebex\b/i, 'Webex'],
+    [/\bWhereby\b/i, 'Whereby'],
+    [/\bhuddle\b.*\bSlack\b/i, 'Slack huddle'],
+];
 const TAB_IDS = ['history', 'system', 'claude', 'calendar', 'notes', 'shelf', 'weather', 'pomodoro', 'water', 'quick'];
 
 export const Notch = GObject.registerClass(
@@ -369,12 +379,12 @@ class Notch extends St.Widget {
         this._collapsed.add_child(this._rightCluster);
 
         /* screen recording / sharing take over the pill: what's happening + a stop button */
-        this._stopBtns = [];
+        this._pillBtns = [];
         const stopBtn = (child, name) => {
             const b = new St.Button({style_class: 'nexnotch-capture-stop', child, can_focus: true, track_hover: true,
                 y_align: Clutter.ActorAlign.CENTER, accessible_name: name});
             b.connect('clicked', () => this._stopCapture());
-            this._stopBtns.push(b);
+            this._pillBtns.push(b);
             return b;
         };
         this._recBox = new St.BoxLayout({style_class: 'nexnotch-capture-box', x_expand: true, visible: false});
@@ -408,6 +418,30 @@ class Notch extends St.Widget {
         this._lyricLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         this._lyricBox.add_child(this._lyricLabel);
         this._collapsed.add_child(this._lyricBox);
+
+        /* in a meeting: which one and for how long; click to go back to it */
+        this._meetBox = new St.BoxLayout({style_class: 'nexnotch-meet-pill', x_expand: true, visible: false});
+        const meetChip = new St.BoxLayout({style_class: 'nexnotch-meet', y_align: Clutter.ActorAlign.CENTER});
+        meetChip.add_child(new St.Icon({gicon: ownIcon('camera'), style_class: 'nexnotch-meet-icon', y_align: Clutter.ActorAlign.CENTER}));
+        this._meetLabel = new St.Label({y_align: Clutter.ActorAlign.CENTER});
+        meetChip.add_child(this._meetLabel);
+        const meetBtn = new St.Button({child: meetChip, can_focus: true, track_hover: true,
+            y_align: Clutter.ActorAlign.CENTER, accessible_name: 'Go to the meeting'});
+        meetBtn.connect('clicked', () => this._goToMeeting());
+        this._pillBtns.push(meetBtn);
+        this._meetClock = new St.Label({style_class: 'nexnotch-clock', x_expand: true,
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
+        const meetDots = new St.BoxLayout({style_class: 'nexnotch-status', y_align: Clutter.ActorAlign.CENTER});
+        this._meetDots = {
+            camera: new St.Widget({style_class: 'nexnotch-status-dot camera', y_align: Clutter.ActorAlign.CENTER}),
+            mic: new St.Widget({style_class: 'nexnotch-status-dot mic', y_align: Clutter.ActorAlign.CENTER}),
+        };
+        meetDots.add_child(this._meetDots.camera);
+        meetDots.add_child(this._meetDots.mic);
+        this._meetBox.add_child(meetBtn);
+        this._meetBox.add_child(this._meetClock);
+        this._meetBox.add_child(meetDots);
+        this._collapsed.add_child(this._meetBox);
 
         /* expanded layer */
         this._expandedLayer = new St.BoxLayout({
@@ -527,11 +561,12 @@ class Notch extends St.Widget {
     /* what the collapsed pill shows: recording/sharing, else lyrics, else
        battery · clock · date */
     _applyPillMode() {
-        const mode = this._captureMode ?? (this._lyricLines?.length ? 'lyric' : null);
+        const mode = this._captureMode ?? (this._meeting ? 'meet' : null) ?? (this._lyricLines?.length ? 'lyric' : null);
         for (const c of [this._leftCluster, this._centerCluster, this._rightCluster]) c.visible = !mode;
         this._recBox.visible = mode === 'rec';
         this._shareBox.visible = mode === 'share';
         this._lyricBox.visible = mode === 'lyric';
+        this._meetBox.visible = mode === 'meet';
         if (mode === 'rec' || mode === 'share') this._collapsed.add_style_class_name('capture');
         else this._collapsed.remove_style_class_name('capture');
         const tint = mode === 'lyric' ? this._shade(this._accent ?? DEFAULT_ACCENT, 0.5) : null;
@@ -633,6 +668,7 @@ class Notch extends St.Widget {
         this._rfkill = getRfkillManager();
         this._rfkill.connectObject('notify::airplane-mode', () => this._onStatus('airplane'), this);
         this._watchPrivacy();
+        this._watchMeetings();
         /* Caps Lock only gets the toast, no icon in the pill */
         this._keymap = global.stage.context.get_backend().get_default_seat().get_keymap();
         this._capsLock = this._keymap.get_caps_lock_state();
@@ -678,6 +714,7 @@ class Notch extends St.Widget {
         }
         this._statusBox.visible = any;
         this._resizeCollapsed();
+        this._syncMeeting();
     }
 
     _onStatus(kind) {
@@ -685,14 +722,98 @@ class Notch extends St.Widget {
         if (on === this._statusState[kind]) return;
         this._syncStatus();
         if (kind === 'camera' || kind === 'mic') {
-            if (on) this._peekPrivacy(kind);
+            if (on && !this._meeting) this._peekPrivacy(kind);
         } else {
             this._peekToggle(kind, on);
         }
     }
 
+    /* A window titled like a call while the camera or mic is on means a
+       meeting. It lasts until both go off or its window closes, so
+       switching browser tabs meanwhile doesn't end it. */
+    _watchMeetings() {
+        const track = win => win.connectObject(
+            'notify::title', () => this._syncMeeting(),
+            'unmanaged', () => {
+                if (this._meeting?.win === win) this._meeting.closed = true;
+                this._syncMeeting();
+            }, this);
+        global.get_window_actors().forEach(a => track(a.meta_window));
+        global.display.connectObject('window-created', (_d, win) => track(win), this);
+    }
+
+    /* A browser names its mic stream after the tab using it, whichever tab
+       is showing, so streams come first; window titles cover native apps
+       and the camera alone. */
+    _findMeeting() {
+        const serviceOf = title => MEETINGS.find(([re]) => re.test(title ?? ''))?.[1] ?? null;
+        let service = null, app = null;   // app: the stream's owner, e.g. "Zen"
+        try {
+            for (const out of Volume.getMixerControl().get_source_outputs()) {
+                if (service) break;
+                service = serviceOf(out.get_description());
+                if (service) app = out.get_name()?.toLowerCase();
+            }
+        } catch (_) {}
+        const wins = global.get_window_actors().map(a => a.meta_window);
+        for (const win of wins) {
+            const found = serviceOf(win.get_title());
+            if (found && (!service || found === service)) return {win, service: found};
+        }
+        if (!service) return null;
+        /* the call's tab isn't the one showing: fall back to its browser's window */
+        const tracker = Shell.WindowTracker.get_default();
+        const win = wins.find(w => tracker.get_window_app(w)?.get_name()?.toLowerCase() === app ||
+            w.get_wm_class()?.toLowerCase().includes(app)) ?? null;
+        return {win, service};
+    }
+
+    _syncMeeting() {
+        if (!this._statusState) return;
+        const live = this._statusState.camera || this._statusState.mic;
+        const was = this._meeting;
+        let m = live && was && !was.closed ? was : null;
+        if (live && !m) {
+            const hit = this._findMeeting();
+            if (hit) m = {...hit, since: GLib.get_monotonic_time()};
+        }
+        this._meeting = m;
+        for (const [kind, dot] of Object.entries(this._meetDots)) dot.visible = !!this._statusState[kind];
+        if (m && !this._meetTimer) {
+            this._tickMeeting();
+            this._meetTimer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 1, () => {
+                this._tickMeeting();
+                return GLib.SOURCE_CONTINUE;
+            });
+        } else if (!m && this._meetTimer) {
+            GLib.source_remove(this._meetTimer);
+            this._meetTimer = 0;
+        }
+        if (m !== was) this._applyPillMode();
+        if (m && !was) this._peekMeeting();
+    }
+
+    _tickMeeting() {
+        if (!this._meeting) return;
+        const s = Math.floor((GLib.get_monotonic_time() - this._meeting.since) / 1e6);
+        const pad = n => String(n).padStart(2, '0');
+        const time = s >= 3600 ? `${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`
+            : `${Math.floor(s / 60)}:${pad(s % 60)}`;
+        const text = `${this._meeting.service} · ${time}`;
+        const grew = text.length !== this._meetLabel.text.length;
+        this._meetLabel.text = text;
+        if (grew) this._resizeCollapsed();
+    }
+
+    _goToMeeting() {
+        if (this._meeting?.win && !this._meeting.closed) Main.activateWindow(this._meeting.win);
+    }
+
     _stopStatus() {
         if (this._privacyRetry) { GLib.source_remove(this._privacyRetry); this._privacyRetry = 0; }
+        if (this._meetTimer) { GLib.source_remove(this._meetTimer); this._meetTimer = 0; }
+        global.display.disconnectObject(this);
+        global.get_window_actors().forEach(a => a.meta_window.disconnectObject(this));
         this._dndSettings?.disconnectObject(this);
         this._rfkill?.disconnectObject(this);
         this._keymap?.disconnectObject(this);
@@ -825,6 +946,7 @@ class Notch extends St.Widget {
         const time = now.toLocaleTimeString([], timeOpts);
         this._clockLabel.text = time;
         this._recClock.text = time;
+        this._meetClock.text = time;
         this._bigClock.text   = time;
         this._dateLabelC.text = this._formatCompactDate(now);
         this._dateLabelC.visible = showDate && !this._pomoChip.visible;
@@ -873,7 +995,7 @@ class Notch extends St.Widget {
         this._hoverTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, HOVER_DELAY_MS, () => {
             this._hoverTimeout = 0;
             if (this._peekActive) return GLib.SOURCE_REMOVE;
-            if (this._stopBtns.some(b => b.hover)) return GLib.SOURCE_REMOVE;
+            if (this._pillBtns.some(b => b.hover)) return GLib.SOURCE_REMOVE;
             if (this.hover || this._pointerInside()) this._expand();
             return GLib.SOURCE_REMOVE;
         });
@@ -1766,6 +1888,15 @@ class Notch extends St.Widget {
         ]);
         row.add_style_class_name('privacy');
         this._showPeek(row, {width: 270, height: 47, duration: POWER_PEEK_MS});
+    }
+
+    _peekMeeting() {
+        if (!this._settings.get_boolean('show-notifications')) return;
+        const badge = new St.Bin({style_class: 'nexnotch-peek-privacy-badge camera', y_align: Clutter.ActorAlign.CENTER,
+            child: new St.Icon({gicon: ownIcon('camera'), style_class: 'nexnotch-peek-privacy-icon'})});
+        const row = this._peekCard(badge, [['In a meeting', 'nexnotch-peek-privacy-title'], [this._meeting.service, 'nexnotch-peek-privacy-app']]);
+        row.add_style_class_name('privacy');
+        this._showPeek(row, {width: 270, height: 47, duration: POWER_PEEK_MS, onClick: () => this._goToMeeting()});
     }
 
     _micApp() {
