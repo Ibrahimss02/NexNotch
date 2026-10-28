@@ -34,6 +34,8 @@ import {BatteryGlyph, Waveform, VERTICAL} from './modules/ui.js';
 import {UpdateChecker} from './modules/updates.js';
 
 const HOVER_DELAY_MS    = 180;
+const ISLAND_WIDTH      = 120;   // the hidden notch's hover spot
+const ISLAND_DWELL_MS   = 500;   // hidden, it opens only if the cursor stays
 const COLLAPSE_DELAY_MS = 300;
 const ANIM_MS           = 260;
 const PEEK_DURATION_MS  = 4000;
@@ -82,6 +84,7 @@ class Notch extends St.Widget {
 
         this._expanded    = false;
         this._peekActive  = false;
+        this._covered     = false;
         this._hoverTimeout    = 0;
         this._collapseTimeout = 0;
         this._clockTimer      = 0;
@@ -146,6 +149,11 @@ class Notch extends St.Widget {
             this._submenuReturn = null;
             if (back && this._expanded) this._goToTab(back);
         });
+        this._modules.quick.connect('open-settings', (_, which) => {
+            this._collapse();
+            if (which === 'nexnotch') this._extension.openPreferences();
+            else Gio.Subprocess.new(['gnome-control-center'], Gio.SubprocessFlags.NONE);
+        });
         this._modules.power.connect('charger-changed',      (_, info)   => this._peekCharger(info));
         /* the countdown only shows whole minutes: refresh when that changes */
         this._modules.water.connect('level', (_, level) => {
@@ -182,9 +190,35 @@ class Notch extends St.Widget {
         } catch (_) { return this._cwMin; }
     }
 
+    /* A window behind the notch (see extension.js): it floats as an island,
+       rounded all round, and at rest hides to a spot that still opens it on
+       hover. */
+    setCovered(covered) {
+        if (covered === this._covered) return;
+        this._covered = covered;
+        this._syncCompact();
+        this._resizeCollapsed();
+    }
+
+    _compact() {
+        return this._covered && !this._expanded && !this._peekActive;
+    }
+
+    _restWidth() {
+        return this._compact() ? ISLAND_WIDTH : this._measureCollapsedWidth();
+    }
+
+    _syncCompact() {
+        const compact = this._compact();
+        if (compact) this._collapsed.hide();
+        else if (!this._expanded && !this._peekActive) this._collapsed.show();
+        if (!compact || !this.hover) this._islandDot.hide();
+        this._syncRadius(true);
+    }
+
     _resizeCollapsed(animate = true) {
         if (this._expanded || this._peekActive) return;
-        const target = this._measureCollapsedWidth();
+        const target = this._restWidth();
         if (animate) {
             this._stopSizeAnim();
             this.ease({
@@ -209,22 +243,29 @@ class Notch extends St.Widget {
     }
 
     _bgStyleFor(radius) {
+        const compact = this._compact?.();
         /* the lyric pill fades from the notch colour into the cover's */
-        const gradient = this._lyricTint && !this._expanded
+        const gradient = this._lyricTint && !this._expanded && !compact
             ? `background-gradient-direction: vertical; background-gradient-start: ${this._bgColor}; background-gradient-end: ${this._lyricTint};`
             : '';
         return `
-            background-color: ${this._bgColor};
-            border-radius: 0 0 ${radius}px ${radius}px;
+            background-color: ${compact ? 'transparent' : this._bgColor};
+            border-radius: ${this._radiiFor(radius)};
             ${gradient}
         `;
+    }
+
+    /* floating as an island, the top corners round too */
+    _radiiFor(radius) {
+        const top = this._covered ? radius : 0;
+        return `${top}px ${top}px ${radius}px ${radius}px`;
     }
 
     /* The notch paints its own background too (blur-my-shell defence), so
        both get the radius or its corners would show square behind _bg. */
     _setRadius(radius) {
         this._bg.set_style(this._bgStyleFor(radius));
-        this.set_style(`background-color: ${this._bgColor}; border-radius: 0 0 ${radius}px ${radius}px;`);
+        this.set_style(`background-color: ${this._compact?.() ? 'transparent' : this._bgColor}; border-radius: ${this._radiiFor(radius)};`);
     }
 
     /* Bottom corners follow the height: a half-round pill when small, up to
@@ -319,6 +360,10 @@ class Notch extends St.Widget {
     _buildLayers() {
         this._bg = new St.Widget({style_class: 'nexnotch-bg', x_expand: true, y_expand: true});
         this.add_child(this._bg);
+        /* hidden notch, hovered: a dot first, the notch only after a dwell */
+        this._islandDot = new St.Widget({style_class: 'nexnotch-island-dot', visible: false,
+            x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
+        this.add_child(this._islandDot);
 
         /* collapsed layout:  [battery] [media]   HH:MM   [date]   [shelf#] */
         this._collapsed = new St.BoxLayout({
@@ -983,6 +1028,11 @@ class Notch extends St.Widget {
 
     _scheduleExpand() {
         if (this._expanded) { this._clearCollapseTimeout(); return; }
+        if (this._compact()) {
+            this._islandDot.show();
+            this._islandDot.opacity = 0;
+            this._islandDot.ease({opacity: 255, duration: 150, mode: Clutter.AnimationMode.EASE_OUT_CUBIC});
+        }
         /* Don't hijack a notification click: when a peek is visible, the
            user's hover intent is almost always "I'm moving to click the
            banner", not "expand the notch". Suppress expansion while peek
@@ -990,7 +1040,7 @@ class Notch extends St.Widget {
            wait for the peek to time out before hovering expands. */
         if (this._peekActive) return;
         this._clearHoverTimeout();
-        this._hoverTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, HOVER_DELAY_MS, () => {
+        this._hoverTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, this._compact() ? ISLAND_DWELL_MS : HOVER_DELAY_MS, () => {
             this._hoverTimeout = 0;
             if (this._peekActive) return GLib.SOURCE_REMOVE;
             if (this._pillBtns.some(b => b.hover)) return GLib.SOURCE_REMOVE;
@@ -1001,6 +1051,7 @@ class Notch extends St.Widget {
 
     _scheduleCollapse() {
         this._clearHoverTimeout();
+        this._islandDot.hide();
         if (!this._expanded) return;
         this._clearCollapseTimeout();
         this._collapseTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, COLLAPSE_DELAY_MS, () => {
@@ -1017,6 +1068,7 @@ class Notch extends St.Widget {
     _expand() {
         if (this._peekActive) this._dismissPeek(true);
         this._expanded = true;
+        this._islandDot.hide();
         this._syncRadius(true);
         this._expandedLayer.visible = true;
         this._updateClocks();
@@ -1053,7 +1105,7 @@ class Notch extends St.Widget {
         this._modules?.quick?.setFocused?.(false);
         this._collapsed.show();
         this._stopSizeAnim();
-        const targetW = this._measureCollapsedWidth();
+        const targetW = this._restWidth();
         this._springEase({width: targetW, height: this._ch}, 520, 0.78);
         /* The notch closes over its content (the clip trims it) and the pill
            fades in before that content is gone, so it never shrinks as an
@@ -1065,6 +1117,7 @@ class Notch extends St.Widget {
             duration: ANIM_MS * 0.9, mode: Clutter.AnimationMode.EASE_IN_QUAD,
             onComplete: () => { this._expandedLayer.visible = false; },
         });
+        this._syncCompact();
     }
 
     _switchTab(id) {
@@ -1641,6 +1694,7 @@ class Notch extends St.Widget {
         this.add_child(peek);
         this._peekLayer = peek;
         this._peekActive = true;
+        this._syncCompact();
         this._collapsed.hide();
         this._stopSizeAnim();
         peek.opacity = 0;
@@ -2079,6 +2133,7 @@ class Notch extends St.Widget {
         this.add_child(peek);
         this._peekLayer  = peek;
         this._peekActive = true;
+        this._syncCompact();
         this._collapsed.hide();
 
         this._stopSizeAnim();
@@ -2155,8 +2210,9 @@ class Notch extends St.Widget {
             this._peekLayer = null;
             if (!this._expanded) {
                 this._collapsed.show();
+                this._syncCompact();
                 this._stopSizeAnim();
-                this.ease({width: this._measureCollapsedWidth(), height: this._ch, duration: 220, mode: Clutter.AnimationMode.EASE_OUT_EXPO});
+                this.ease({width: this._restWidth(), height: this._ch, duration: 220, mode: Clutter.AnimationMode.EASE_OUT_EXPO});
             }
         };
         if (immediate) finalize();

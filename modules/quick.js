@@ -24,6 +24,7 @@ export const QuickHub = GObject.registerClass({
         'updated': {},
         'show-submenu': {},
         'submenu-closed': {},   // by the user: back button or an item picked
+        'open-settings': {param_types: [GObject.TYPE_STRING]},   // 'nexnotch' | 'system'
     },
 }, class QuickHub extends GObject.Object {
     _init(settings) {
@@ -410,6 +411,13 @@ export const QuickHub = GObject.registerClass({
         /* Lock and Suspend are safe one-click; Log out / Reboot / Shutdown
            require a second confirmation click within 3 s (button turns red
            and shows a check mark) so accidental taps don't kill work. */
+        /* NexNotch's own preferences (small), then GNOME Settings */
+        const prefs = this._actionButton('NexNotch preferences', null, () => this.emit('open-settings', 'nexnotch'));
+        prefs.child.gicon = Gio.FileIcon.new(Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_child('icons/sliders.svg'));
+        prefs.add_style_class_name('small');
+        prefs.y_align = Clutter.ActorAlign.CENTER;
+        actions.add_child(prefs);
+        actions.add_child(this._actionButton('Settings', 'emblem-system-symbolic', () => this.emit('open-settings', 'system')));
         actions.add_child(this._actionButton('Lock',    'system-lock-screen-symbolic', () => this._run(['loginctl', 'lock-session'])));
         actions.add_child(this._actionButton('Suspend', 'weather-clear-night-symbolic', () => this._run(['systemctl', 'suspend'])));
         actions.add_child(this._armedActionButton('Log out',  'system-log-out-symbolic',  ['gnome-session-quit', '--logout', '--no-prompt']));

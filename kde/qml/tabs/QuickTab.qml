@@ -463,7 +463,7 @@ Item {
                 color: "#1C1C1E"; hoverColor: Theme.surface
                 accessibleName: "NexNotch settings"
                 onClicked: tab.notch.openSettings("")
-                NIcon { anchors.centerIn: parent; name: "configure-symbolic"; size: 14; color: Theme.textDim }
+                NIcon { anchors.centerIn: parent; name: "own:sliders"; size: 14; color: Theme.textDim }
             }
             PowerButton {
                 label: "System Settings"; icon: "emblem-system-symbolic"
