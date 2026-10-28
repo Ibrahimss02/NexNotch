@@ -4,6 +4,7 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import Soup from 'gi://Soup?version=3.0';
+import {VERTICAL} from './ui.js';
 
 export const Weather = GObject.registerClass({
     Signals: {
@@ -104,9 +105,9 @@ export const Weather = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-weather', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-weather', ...VERTICAL, x_expand: true});
         const message = (title, sub) => {
-            const card = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-msg', vertical: true, x_expand: true});
+            const card = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-msg', ...VERTICAL, x_expand: true});
             card.add_child(new St.Label({text: title, style_class: 'nexnotch-section-title', x_align: Clutter.ActorAlign.CENTER}));
             if (sub) card.add_child(new St.Label({text: sub, style_class: 'nexnotch-muted', x_align: Clutter.ActorAlign.CENTER}));
             box.add_child(card);
@@ -140,9 +141,9 @@ export const Weather = GObject.registerClass({
             const deg  = (c, fh) => `${f ? fh : c}°`;
 
             const top = new St.BoxLayout({style_class: 'nexnotch-weather-top', x_expand: true});
-            const hero = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-hero', vertical: true, x_expand: true});
+            const hero = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-hero', ...VERTICAL, x_expand: true});
             const heroHead = new St.BoxLayout({x_expand: true});
-            const place = new St.BoxLayout({vertical: true, x_expand: true});
+            const place = new St.BoxLayout({...VERTICAL, x_expand: true});
             const name = new St.BoxLayout({style_class: 'nexnotch-weather-place'});
             name.add_child(new St.Label({text: area, style_class: 'nexnotch-section-title'}));
             name.add_child(new St.Icon({icon_name: 'find-location-symbolic', style_class: 'nexnotch-weather-pin', y_align: Clutter.ActorAlign.CENTER}));
@@ -158,7 +159,7 @@ export const Weather = GObject.registerClass({
             hero.add_child(heroFoot);
             top.add_child(hero);
 
-            const tiles = new St.BoxLayout({style_class: 'nexnotch-weather-tiles', vertical: true});
+            const tiles = new St.BoxLayout({style_class: 'nexnotch-weather-tiles', ...VERTICAL});
             const uv = Number(cur.uvIndex);
             const uvWord = uv <= 2 ? 'Low' : uv <= 5 ? 'Moderate' : uv <= 7 ? 'High' : uv <= 10 ? 'Very high' : 'Extreme';
             const cells = [
@@ -179,7 +180,7 @@ export const Weather = GObject.registerClass({
             if (days.length) {
                 const lo = Math.min(...days.map(d => Number(f ? d.mintempF : d.mintempC)));
                 const hi = Math.max(...days.map(d => Number(f ? d.maxtempF : d.maxtempC)));
-                const list = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-days', vertical: true, x_expand: true});
+                const list = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-weather-days', ...VERTICAL, x_expand: true});
                 days.forEach((d, i) => {
                     const row = new St.BoxLayout({style_class: `nexnotch-weather-day${i === days.length - 1 ? ' last' : ''}`, x_expand: true});
                     row.add_child(new St.Label({text: i === 0 ? 'Today' : new Date(d.date).toLocaleDateString([], {weekday: 'short'}),
@@ -203,7 +204,7 @@ export const Weather = GObject.registerClass({
     }
 
     _metaCell(label, value, unit) {
-        const c = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-weather-tile'});
+        const c = new St.BoxLayout({...VERTICAL, x_expand: true, style_class: 'nexnotch-weather-tile'});
         c.add_child(new St.Label({text: label, style_class: 'nexnotch-weather-tile-label'}));
         const v = new St.BoxLayout({style_class: 'nexnotch-weather-tile-value-box'});
         v.add_child(new St.Label({text: `${value}`, style_class: 'nexnotch-weather-tile-value'}));

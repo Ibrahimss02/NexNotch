@@ -30,7 +30,7 @@ import {Lyrics, lineAt}   from './modules/lyrics.js';
 import {PowerWatcher, State as PowerState} from './modules/power.js';
 import {WaterReminder, CUP_ICON} from './modules/water.js';
 import {Shelf} from './modules/shelf.js';
-import {BatteryGlyph, Waveform} from './modules/ui.js';
+import {BatteryGlyph, Waveform, VERTICAL} from './modules/ui.js';
 import {UpdateChecker} from './modules/updates.js';
 
 const HOVER_DELAY_MS    = 180;
@@ -323,7 +323,6 @@ class Notch extends St.Widget {
         /* collapsed layout:  [battery] [media]   HH:MM   [date]   [shelf#] */
         this._collapsed = new St.BoxLayout({
             style_class: 'nexnotch-collapsed',
-            vertical: false,
             /* fixed size, pinned top-centre: stays put while the notch grows */
             x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.START,
             height: this._ch,
@@ -331,7 +330,7 @@ class Notch extends St.Widget {
         this.add_child(this._collapsed);
 
         /* left: battery · centre: clock · right: date, timer, playing waveform */
-        this._leftCluster = new St.BoxLayout({style_class: 'nexnotch-cluster nexnotch-left', vertical: false});
+        this._leftCluster = new St.BoxLayout({style_class: 'nexnotch-cluster nexnotch-left'});
         this._batteryIcon = new BatteryGlyph();
         this._batteryIcon.visible = false;
         this._batteryPct = new St.Label({text: '', style_class: 'nexnotch-battery-pct', visible: false, y_align: Clutter.ActorAlign.CENTER});
@@ -340,14 +339,13 @@ class Notch extends St.Widget {
 
         this._centerCluster = new St.BoxLayout({
             style_class: 'nexnotch-cluster nexnotch-center',
-            vertical: false,
             x_expand: true,
             x_align: Clutter.ActorAlign.CENTER,
         });
         this._clockLabel = new St.Label({text: '', style_class: 'nexnotch-clock', y_align: Clutter.ActorAlign.CENTER});
         this._centerCluster.add_child(this._clockLabel);
 
-        this._rightCluster = new St.BoxLayout({style_class: 'nexnotch-cluster nexnotch-right', vertical: false});
+        this._rightCluster = new St.BoxLayout({style_class: 'nexnotch-cluster nexnotch-right'});
         this._dateLabelC = new St.Label({text: '', style_class: 'nexnotch-date-mini', x_expand: true, x_align: Clutter.ActorAlign.END, y_align: Clutter.ActorAlign.CENTER});
         this._pomoChip = new St.BoxLayout({style_class: 'nexnotch-pomo-chip', visible: false, x_expand: true,
             x_align: Clutter.ActorAlign.END, y_align: Clutter.ActorAlign.CENTER});
@@ -446,7 +444,7 @@ class Notch extends St.Widget {
         /* expanded layer */
         this._expandedLayer = new St.BoxLayout({
             style_class: 'nexnotch-expanded',
-            vertical: true,
+            ...VERTICAL,
             /* laid out once at the final size; the growing notch reveals it */
             x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.START,
             width: this._ew,
@@ -455,9 +453,9 @@ class Notch extends St.Widget {
         });
         this.add_child(this._expandedLayer);
 
-        this._header = new St.BoxLayout({style_class: 'nexnotch-header', vertical: false});
+        this._header = new St.BoxLayout({style_class: 'nexnotch-header'});
         this._bigClock  = new St.Label({text: '', style_class: 'nexnotch-big-clock'});
-        const dateCol = new St.BoxLayout({vertical: true, x_align: Clutter.ActorAlign.END, y_align: Clutter.ActorAlign.CENTER});
+        const dateCol = new St.BoxLayout({...VERTICAL, x_align: Clutter.ActorAlign.END, y_align: Clutter.ActorAlign.CENTER});
         this._dateLabel  = new St.Label({text: '', style_class: 'nexnotch-date', x_align: Clutter.ActorAlign.END});
         this._monthLabel = new St.Label({text: '', style_class: 'nexnotch-date-month', x_align: Clutter.ActorAlign.END});
         dateCol.add_child(this._dateLabel);
@@ -1342,7 +1340,7 @@ class Notch extends St.Widget {
         const mpris = this._modules.mpris;
         /* the blurred cover fills the card; a shade on top keeps text readable */
         const outer = new St.Widget({style_class: 'nexnotch-player', layout_manager: new Clutter.BinLayout(), x_expand: true});
-        const card = new St.BoxLayout({style_class: 'nexnotch-player-shade', vertical: true, x_expand: true, y_expand: true});
+        const card = new St.BoxLayout({style_class: 'nexnotch-player-shade', ...VERTICAL, x_expand: true, y_expand: true});
         outer.add_child(card);
         const accentActors = [];   // tinted with the cover's colour once it loads
 
@@ -1350,7 +1348,7 @@ class Notch extends St.Widget {
         const art = new St.Bin({style_class: 'nexnotch-player-art', y_align: Clutter.ActorAlign.CENTER});
         art.set_child(new St.Icon({icon_name: this._resolveMediaIcon(info.icon) ?? 'audio-x-generic-symbolic', icon_size: 26}));
         top.add_child(art);
-        const text = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER, style_class: 'nexnotch-player-text'});
+        const text = new St.BoxLayout({...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER, style_class: 'nexnotch-player-text'});
         let sink = '';
         try { sink = Volume.getMixerControl().get_default_sink()?.get_description() ?? ''; } catch (_) {}
         const srcBox = new St.BoxLayout({style_class: 'nexnotch-player-source-box'});
@@ -1540,7 +1538,7 @@ class Notch extends St.Widget {
 
     /* previous / current / next lyric line; sync(us) follows the wave position */
     _buildLyrics(info, alive) {
-        const box = new St.BoxLayout({style_class: 'nexnotch-lyrics', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-lyrics', ...VERTICAL, x_expand: true});
         const line = (cls, wrap) => {
             const l = new St.Label({style_class: cls, x_expand: true});
             l.clutter_text.line_alignment = Pango.Alignment.CENTER;
@@ -1682,7 +1680,7 @@ class Notch extends St.Widget {
     _peekCard(leading, lines, trailing = null) {
         const row = new St.BoxLayout({style_class: 'nexnotch-peek-row', x_expand: true});
         row.add_child(leading);
-        const text = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER, style_class: 'nexnotch-peek-text'});
+        const text = new St.BoxLayout({...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER, style_class: 'nexnotch-peek-text'});
         for (const [str, cls] of lines) if (str) text.add_child(this._ellipsized(str, cls));
         row.add_child(text);
         if (trailing) row.add_child(trailing);
@@ -1830,7 +1828,7 @@ class Notch extends St.Widget {
         const items = `${n} item${n === 1 ? '' : 's'}`;
         const icon = cls => new St.Icon({icon_name: 'folder-download-symbolic', style_class: cls, y_align: Clutter.ActorAlign.CENTER});
         if (state === 'hover') {
-            const zone = new St.BoxLayout({style_class: 'nexnotch-drop-zone', vertical: true, x_expand: true, y_expand: true});
+            const zone = new St.BoxLayout({style_class: 'nexnotch-drop-zone', ...VERTICAL, x_expand: true, y_expand: true});
             const disc = new St.Bin({style_class: 'nexnotch-drop-disc', x_align: Clutter.ActorAlign.CENTER, child: icon('nexnotch-drop-disc-icon')});
             zone.add_child(disc);
             zone.add_child(new St.Label({text: 'Release to add to Shelf', style_class: 'nexnotch-drop-title', x_align: Clutter.ActorAlign.CENTER}));
@@ -2005,8 +2003,7 @@ class Notch extends St.Widget {
         const timeStr = 'now';
 
         const peek = new St.BoxLayout({
-            style_class: 'nexnotch-peek',
-            vertical: false, x_expand: true, y_expand: true,
+            style_class: 'nexnotch-peek', x_expand: true, y_expand: true,
             reactive: true,
             track_hover: true,
             can_focus: true,
@@ -2037,7 +2034,7 @@ class Notch extends St.Widget {
         peek.add_child(iconWrap);
 
         const textCol = new St.BoxLayout({
-            vertical: true, x_expand: true, y_expand: true,
+            ...VERTICAL, x_expand: true, y_expand: true,
             y_align: Clutter.ActorAlign.CENTER,
             style_class: 'nexnotch-peek-text',
         });

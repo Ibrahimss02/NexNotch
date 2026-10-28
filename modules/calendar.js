@@ -7,6 +7,7 @@ import Pango from 'gi://Pango';
 import Soup from 'gi://Soup?version=3.0';
 
 import {getAccessToken, listGoogleAccounts} from './goa.js';
+import {VERTICAL} from './ui.js';
 
 const TASKS_API = 'https://tasks.googleapis.com/tasks/v1';
 
@@ -293,7 +294,7 @@ export const CalendarPeek = GObject.registerClass({
         const box = new St.BoxLayout({style_class: 'nexnotch-cal', x_expand: true});
         box.add_child(this._monthGrid());
 
-        const agenda = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-card nexnotch-cal-agenda'});
+        const agenda = new St.BoxLayout({...VERTICAL, x_expand: true, style_class: 'nexnotch-card nexnotch-cal-agenda'});
         const day = this._selectedDay;
         let events;
         if (day) {
@@ -307,7 +308,7 @@ export const CalendarPeek = GObject.registerClass({
             agenda.add_child(new St.Label({text: 'UP NEXT', style_class: 'nexnotch-caps'}));
         }
         if (events.length === 0) {
-            const empty = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true, style_class: 'nexnotch-cal-empty',
+            const empty = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true, style_class: 'nexnotch-cal-empty',
                 y_align: Clutter.ActorAlign.CENTER});
             empty.add_child(new St.Icon({icon_name: 'x-office-calendar-symbolic', style_class: 'nexnotch-cal-empty-icon', x_align: Clutter.ActorAlign.CENTER}));
             empty.add_child(new St.Label({text: day ? 'No events' : 'No more events today', style_class: 'nexnotch-cal-empty-title', x_align: Clutter.ActorAlign.CENTER}));
@@ -319,7 +320,7 @@ export const CalendarPeek = GObject.registerClass({
         } else {
             const scroll = new St.ScrollView({style_class: 'nexnotch-cal-agenda-scroll', x_expand: true, y_expand: true,
                 hscrollbar_policy: St.PolicyType.NEVER, overlay_scrollbars: true});
-            const inner = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-cal-rows'});
+            const inner = new St.BoxLayout({...VERTICAL, x_expand: true, style_class: 'nexnotch-cal-rows'});
             for (const ev of events.slice(0, 24)) inner.add_child(this._eventRow(ev, !!day));
             scroll.set_child(inner);
             agenda.add_child(scroll);
@@ -355,7 +356,7 @@ export const CalendarPeek = GObject.registerClass({
             if (d.getFullYear() === year && d.getMonth() === month) eventDays.add(d.getDate());
         }
 
-        const grid = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-cal-month', vertical: true});
+        const grid = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-cal-month', ...VERTICAL});
         const header = new St.BoxLayout({style_class: 'nexnotch-cal-month-header', x_expand: true});
         const title = new St.Label({style_class: 'nexnotch-cal-month-name', x_expand: true, y_align: Clutter.ActorAlign.CENTER});
         title.clutter_text.set_markup(`${GLib.markup_escape_text(viewDate.toLocaleDateString([], {month: 'long'}), -1)} <span foreground="#FFFFFF">${year}</span>`);
@@ -388,7 +389,7 @@ export const CalendarPeek = GObject.registerClass({
         for (let i = 0; i < startWeekday; i++) row.add_child(new St.Widget({style_class: 'nexnotch-cal-cell'}));
         let col = startWeekday;
         for (let day = 1; day <= daysInMonth; day++) {
-            const cell = new St.BoxLayout({style_class: 'nexnotch-cal-cell', vertical: true});
+            const cell = new St.BoxLayout({style_class: 'nexnotch-cal-cell', ...VERTICAL});
             /* the circle is a Bin so the number can be centred in it both ways */
             const date = new Date(year, month, day);
             const selected = this._selectedDay?.getTime() === date.getTime();
@@ -413,7 +414,7 @@ export const CalendarPeek = GObject.registerClass({
     }
 
     _renderTasks() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-tasks', vertical: true, x_expand: true, y_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-tasks', ...VERTICAL, x_expand: true, y_expand: true});
 
         const filter = this._settings.get_strv('tasks-enabled-lists');
         let tasks = this._tasks;
@@ -472,7 +473,7 @@ export const CalendarPeek = GObject.registerClass({
 
             const items = this._activeTaskList === 'All' ? tasks : (byList.get(this._activeTaskList) ?? []);
             const scroll = new St.ScrollView({style_class: 'nexnotch-task-scroll', x_expand: true, y_expand: true});
-            const inner = new St.BoxLayout({vertical: true, x_expand: true});
+            const inner = new St.BoxLayout({...VERTICAL, x_expand: true});
             if (items.length === 0) {
                 inner.add_child(new St.Label({text: 'No pending tasks', style_class: 'nexnotch-empty', x_align: Clutter.ActorAlign.CENTER}));
             }
@@ -492,7 +493,7 @@ export const CalendarPeek = GObject.registerClass({
     }
 
     _addTaskRow(listId) {
-        const wrap = new St.BoxLayout({vertical: true, style_class: 'nexnotch-task-add-wrap', x_expand: true});
+        const wrap = new St.BoxLayout({...VERTICAL, style_class: 'nexnotch-task-add-wrap', x_expand: true});
 
         if (!this._composeOpen) {
             const btn = new St.Button({style_class: 'nexnotch-task-add-btn', label: '+ Add task', can_focus: true});
@@ -503,7 +504,7 @@ export const CalendarPeek = GObject.registerClass({
             return wrap;
         }
 
-        const card = new St.BoxLayout({vertical: true, style_class: 'nexnotch-task-compose', x_expand: true});
+        const card = new St.BoxLayout({...VERTICAL, style_class: 'nexnotch-task-compose', x_expand: true});
         const titleEntry = new St.Entry({style_class: 'nexnotch-task-compose-title', hint_text: 'Task title', x_expand: true, can_focus: true});
         const notesEntry = new St.Entry({style_class: 'nexnotch-task-compose-notes', hint_text: 'Description (optional)', x_expand: true, can_focus: true});
         card.add_child(titleEntry);
@@ -532,7 +533,7 @@ export const CalendarPeek = GObject.registerClass({
         const check = new St.Button({style_class: 'nexnotch-task-check', label: t.done ? '☑' : '☐'});
         check.connect('clicked', () => this.toggleTask(t));
         row.add_child(check);
-        const col = new St.BoxLayout({vertical: true, x_expand: true});
+        const col = new St.BoxLayout({...VERTICAL, x_expand: true});
         col.add_child(new St.Label({text: t.title, style_class: 'nexnotch-task-title'}));
         if (showList && t.list) col.add_child(new St.Label({text: t.list, style_class: 'nexnotch-task-list-tag'}));
         row.add_child(col);

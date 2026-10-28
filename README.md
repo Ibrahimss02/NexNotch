@@ -1,6 +1,6 @@
 # NexNotch — Dynamic Island for GNOME
 
-[![GNOME Shell 46–50](https://img.shields.io/badge/GNOME%20Shell-46%20to%2050-4A86CF?logo=gnome&logoColor=white)](https://www.gnome.org/)
+[![GNOME Shell 46–51](https://img.shields.io/badge/GNOME%20Shell-46%20to%2051-4A86CF?logo=gnome&logoColor=white)](https://www.gnome.org/)
 [![Ubuntu 24.04+](https://img.shields.io/badge/Ubuntu-24.04%2B-E95420?logo=ubuntu&logoColor=white)](#compatibility)
 [![Fedora 40+](https://img.shields.io/badge/Fedora-40%2B-51A2DA?logo=fedora&logoColor=white)](#compatibility)
 [![License: GPL-3.0+](https://img.shields.io/badge/License-GPL--3.0%2B-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
@@ -170,7 +170,7 @@ Remappable from the **Shortcuts** page in preferences.
 
 ```
 nexnotch@nexvar/
-├── metadata.json          # shell-version 46–50
+├── metadata.json          # shell-version 46–51
 ├── extension.js           # mount in top chrome, top-corner ears, OSD hook
 ├── notch.js               # pill, expanded hub, swipe tabs, peeks, music card
 ├── modules/

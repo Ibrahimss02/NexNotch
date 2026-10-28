@@ -6,6 +6,7 @@ import Clutter from 'gi://Clutter';
 import Pango from 'gi://Pango';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {VERTICAL} from './ui.js';
 
 const MAX_ROWS = 50;
 
@@ -62,7 +63,7 @@ export const NotificationHistory = GObject.registerClass({
     }
 
     render(musicCard) {
-        const box = new St.BoxLayout({style_class: 'nexnotch-hist', vertical: true, x_expand: true, y_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-hist', ...VERTICAL, x_expand: true, y_expand: true});
         if (musicCard) box.add_child(musicCard);
         const items = this._items();
         const header = new St.BoxLayout({style_class: 'nexnotch-hist-header', x_expand: true});
@@ -82,14 +83,14 @@ export const NotificationHistory = GObject.registerClass({
             return box;
         }
 
-        const list = new St.BoxLayout({vertical: true, x_expand: true, style_class: 'nexnotch-hist-list'});
+        const list = new St.BoxLayout({...VERTICAL, x_expand: true, style_class: 'nexnotch-hist-list'});
         for (const {source, n} of items) {
             const card = new St.Widget({layout_manager: new Clutter.BinLayout(), x_expand: true, track_hover: true, reactive: true});
             const row = new St.BoxLayout({style_class: 'nexnotch-hist-card', x_expand: true});
             const icon = new St.Bin({style_class: 'nexnotch-hist-icon', y_align: Clutter.ActorAlign.CENTER,
                 child: new St.Icon({gicon: n.gicon ?? source.icon ?? Gio.ThemedIcon.new('dialog-information-symbolic'), icon_size: 20})});
             row.add_child(icon);
-            const col = new St.BoxLayout({vertical: true, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
+            const col = new St.BoxLayout({...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER});
             const titleRow = new St.BoxLayout({x_expand: true});
             const title = new St.Label({text: n.title || source.title || '', style_class: 'nexnotch-hist-title', x_expand: true});
             title.clutter_text.ellipsize = Pango.EllipsizeMode.END;

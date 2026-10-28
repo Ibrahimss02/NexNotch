@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
-import {Ring} from './ui.js';
+import {Ring, VERTICAL} from './ui.js';
 import Gio from 'gi://Gio';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -203,7 +203,7 @@ export const Pomodoro = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-pomo', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-pomo', ...VERTICAL, x_expand: true});
         const {work, brk} = this._activePreset();
 
         const seg = new St.BoxLayout({style_class: 'nexnotch-segmented', x_align: Clutter.ActorAlign.CENTER, accessible_name: 'Focus / break length'});
@@ -235,7 +235,7 @@ export const Pomodoro = GObject.registerClass({
         const wrap = new St.Widget({layout_manager: new Clutter.BinLayout(), width: 189, height: 189});
         wrap.add_child(new Ring({size: 189, thickness: 7, track: '#2C2C2E', color: resting ? '#30D158' : '#FF9F0A', frac,
             accessibleName: `${this._stateLabel()}, ${this.formatRemain()}`}));
-        const center = new St.BoxLayout({vertical: true, x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
+        const center = new St.BoxLayout({...VERTICAL, x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER});
         center.add_child(new St.Label({text: this._state === 'idle' ? `${String(work).padStart(2, '0')}:00` : this.formatRemain(),
             style_class: 'nexnotch-pomo-big', x_align: Clutter.ActorAlign.CENTER}));
         center.add_child(new St.Label({text: this._state === 'idle' ? 'Focus' : this._stateLabel(),

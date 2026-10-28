@@ -6,6 +6,7 @@ import Clutter from 'gi://Clutter';
 import Pango from 'gi://Pango';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {VERTICAL} from './ui.js';
 
 const HELPER = GLib.build_filenamev([GLib.path_get_dirname(import.meta.url.replace('file://', '')), 'dropzone.js']);
 const PER_ROW = 5;
@@ -164,7 +165,7 @@ export const Shelf = GObject.registerClass({
 
     render(dropState) {
         const items = this.items();
-        const box = new St.BoxLayout({style_class: 'nexnotch-shelf', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-shelf', ...VERTICAL, x_expand: true});
         const head = new St.BoxLayout({style_class: 'nexnotch-shelf-head', x_expand: true});
         const title = new St.BoxLayout({x_expand: true, y_align: Clutter.ActorAlign.CENTER, style_class: 'nexnotch-shelf-title-box'});
         title.add_child(new St.Label({text: 'Shelf', style_class: 'nexnotch-section-title'}));
@@ -179,7 +180,7 @@ export const Shelf = GObject.registerClass({
         box.add_child(head);
 
         if (dropState) {
-            const zone = new St.BoxLayout({style_class: 'nexnotch-drop-zone tab', vertical: true, x_expand: true});
+            const zone = new St.BoxLayout({style_class: 'nexnotch-drop-zone tab', ...VERTICAL, x_expand: true});
             zone.add_child(new St.Bin({style_class: 'nexnotch-drop-disc', x_align: Clutter.ActorAlign.CENTER,
                 child: new St.Icon({icon_name: 'folder-download-symbolic', style_class: 'nexnotch-drop-disc-icon'})}));
             zone.add_child(new St.Label({text: dropState === 'hover' ? 'Release to add to Shelf' : 'Drop files here',
@@ -191,7 +192,7 @@ export const Shelf = GObject.registerClass({
         }
 
         /* rows rather than a horizontal strip: sideways swipes change tabs */
-        const grid = new St.BoxLayout({style_class: 'nexnotch-shelf-grid', vertical: true});
+        const grid = new St.BoxLayout({style_class: 'nexnotch-shelf-grid', ...VERTICAL});
         let row = null;
         const tiles = [...items.map(uri => this._tile(uri)), this._dropTile()];
         tiles.forEach((tile, i) => {
@@ -208,7 +209,7 @@ export const Shelf = GObject.registerClass({
     }
 
     _dropTile() {
-        const tile = new St.BoxLayout({style_class: 'nexnotch-shelf-drop', vertical: true, width: 112, height: 126});
+        const tile = new St.BoxLayout({style_class: 'nexnotch-shelf-drop', ...VERTICAL, width: 112, height: 126});
         tile.add_child(new St.Icon({icon_name: 'list-add-symbolic', style_class: 'nexnotch-shelf-drop-icon', x_align: Clutter.ActorAlign.CENTER}));
         const label = new St.Label({text: 'Drop files on the island', style_class: 'nexnotch-shelf-drop-label', x_expand: true});
         label.clutter_text.line_wrap = true;
@@ -222,7 +223,7 @@ export const Shelf = GObject.registerClass({
         const wrap = new St.Widget({layout_manager: new Clutter.BinLayout(), track_hover: true, reactive: true, width: 112, height: 126});
         const tile = new St.Button({style_class: 'nexnotch-shelf-tile', can_focus: true, accessible_name: file.get_basename(),
             x_expand: true, y_expand: true});
-        const col = new St.BoxLayout({vertical: true, y_align: Clutter.ActorAlign.END, x_expand: true});
+        const col = new St.BoxLayout({...VERTICAL, y_align: Clutter.ActorAlign.END, x_expand: true});
         const icon = new St.Icon({gicon: Gio.ThemedIcon.new('text-x-generic'), icon_size: 43, x_align: Clutter.ActorAlign.CENTER,
             style_class: 'nexnotch-shelf-icon'});
         const name = new St.Label({text: file.get_basename(), style_class: 'nexnotch-shelf-name', x_align: Clutter.ActorAlign.CENTER});

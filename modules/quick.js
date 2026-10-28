@@ -8,6 +8,7 @@ import Pango from 'gi://Pango';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {QuickToggle, QuickMenuToggle, QuickSlider} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import {Slider} from 'resource:///org/gnome/shell/ui/slider.js';
+import {VERTICAL} from './ui.js';
 
 const UPOWER_XML = `
 <node>
@@ -105,7 +106,7 @@ export const QuickHub = GObject.registerClass({
     }
 
     _buildSliders() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-quick-sliders', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-quick-sliders', ...VERTICAL, x_expand: true});
         for (const item of this._systemItems()) {
             if (!(item instanceof QuickSlider)) continue;
             const row = new St.BoxLayout({style_class: 'nexnotch-quick-slider-row', x_expand: true});
@@ -156,8 +157,8 @@ export const QuickHub = GObject.registerClass({
     _buildToggles() {
         const area = new St.BoxLayout({style_class: 'nexnotch-quick-grid', x_expand: true});
         /* top-aligned: the two groups can differ in height and neither should stretch */
-        const big = new St.BoxLayout({style_class: 'nexnotch-quick-big', vertical: true, x_expand: true, y_align: Clutter.ActorAlign.START});
-        const small = new St.BoxLayout({style_class: 'nexnotch-quick-smalls', vertical: true, x_expand: true, y_align: Clutter.ActorAlign.START});
+        const big = new St.BoxLayout({style_class: 'nexnotch-quick-big', ...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.START});
+        const small = new St.BoxLayout({style_class: 'nexnotch-quick-smalls', ...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.START});
         const items = this._systemItems().filter(i => i instanceof QuickToggle || i instanceof QuickMenuToggle);
         const withMenu = items.filter(i => i.menu).slice(0, 4);
         const rest = items.filter(i => !withMenu.includes(i));
@@ -204,7 +205,7 @@ export const QuickHub = GObject.registerClass({
         const icon = new St.Icon({style_class: 'nexnotch-quick-big-icon'});
         const disc = new St.Button({style_class: 'nexnotch-quick-disc', child: icon, can_focus: true, y_align: Clutter.ActorAlign.CENTER});
         disc.connect('clicked', () => this._activate(item));
-        const text = new St.BoxLayout({vertical: true, x_expand: true});
+        const text = new St.BoxLayout({...VERTICAL, x_expand: true});
         const title = new St.Label({style_class: 'nexnotch-quick-big-title'});
         const sub = new St.Label({style_class: 'nexnotch-quick-big-sub'});
         title.clutter_text.ellipsize = sub.clutter_text.ellipsize = Pango.EllipsizeMode.END;
@@ -240,7 +241,7 @@ export const QuickHub = GObject.registerClass({
         const icon = new St.Icon({style_class: 'nexnotch-quick-small-icon', x_align: Clutter.ActorAlign.START});
         const title = new St.Label({style_class: 'nexnotch-quick-small-title'});
         title.clutter_text.ellipsize = Pango.EllipsizeMode.END;
-        const col = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true});
+        const col = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true});
         col.add_child(icon);
         col.add_child(new St.Widget({y_expand: true}));
         col.add_child(title);
@@ -261,7 +262,7 @@ export const QuickHub = GObject.registerClass({
     }
 
     _layoutTile() {
-        const col = new St.BoxLayout({vertical: true, x_expand: true, y_expand: true});
+        const col = new St.BoxLayout({...VERTICAL, x_expand: true, y_expand: true});
         col.add_child(new St.Icon({icon_name: 'input-keyboard-symbolic', style_class: 'nexnotch-quick-small-icon', x_align: Clutter.ActorAlign.START}));
         col.add_child(new St.Widget({y_expand: true}));
         col.add_child(new St.Label({text: `Layout · ${this._kbLayout || '—'}`, style_class: 'nexnotch-quick-small-title'}));
@@ -319,7 +320,7 @@ export const QuickHub = GObject.registerClass({
 
     _buildSubmenu() {
         const {box} = this._submenu.item.menu;
-        const view = new St.BoxLayout({style_class: 'nexnotch-quick-submenu', vertical: true, x_expand: true});
+        const view = new St.BoxLayout({style_class: 'nexnotch-quick-submenu', ...VERTICAL, x_expand: true});
         const back = new St.Button({
             style_class: 'nexnotch-quick-back', can_focus: true, accessible_name: 'Back',
             x_align: Clutter.ActorAlign.START,
@@ -385,7 +386,7 @@ export const QuickHub = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-quick', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-quick', ...VERTICAL, x_expand: true});
 
         this._dropMirrors(); // the previous render's widgets are gone
         if (this._submenu) {

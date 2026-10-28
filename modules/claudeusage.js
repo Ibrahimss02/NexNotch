@@ -4,7 +4,7 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 
-import {Ring} from './ui.js';
+import {Ring, VERTICAL} from './ui.js';
 import Soup from 'gi://Soup?version=3.0';
 
 /* Reads the local Claude Code CLI's own OAuth token (the same one the
@@ -101,9 +101,9 @@ export const ClaudeUsage = GObject.registerClass({
     }
 
     render() {
-        const box = new St.BoxLayout({style_class: 'nexnotch-claude', vertical: true, x_expand: true});
+        const box = new St.BoxLayout({style_class: 'nexnotch-claude', ...VERTICAL, x_expand: true});
         if (!this._data) {
-            const msg = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-claude-msg', vertical: true, x_expand: true});
+            const msg = new St.BoxLayout({style_class: 'nexnotch-card nexnotch-claude-msg', ...VERTICAL, x_expand: true});
             msg.add_child(new St.Label({text: this._lastError ? 'Claude usage unavailable' : 'Loading Claude usage…',
                 style_class: 'nexnotch-section-title', x_align: Clutter.ActorAlign.CENTER}));
             if (this._lastError) msg.add_child(new St.Label({text: this._lastError, style_class: 'nexnotch-muted', x_align: Clutter.ActorAlign.CENTER}));
@@ -145,7 +145,7 @@ export const ClaudeUsage = GObject.registerClass({
         wrap.add_child(new St.Label({text: `${pct.toFixed(0)}%`, style_class: 'nexnotch-claude-pct',
             x_align: Clutter.ActorAlign.CENTER, y_align: Clutter.ActorAlign.CENTER}));
         card.add_child(wrap);
-        const text = new St.BoxLayout({vertical: true, style_class: 'nexnotch-claude-text', y_align: Clutter.ActorAlign.CENTER});
+        const text = new St.BoxLayout({...VERTICAL, style_class: 'nexnotch-claude-text', y_align: Clutter.ActorAlign.CENTER});
         text.add_child(new St.Label({text: title, style_class: 'nexnotch-claude-title'}));
         text.add_child(new St.Label({text: subtitle, style_class: 'nexnotch-muted'}));
         if (resetsAt) {
