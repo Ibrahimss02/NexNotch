@@ -457,6 +457,18 @@ Item {
         Row {
             Layout.alignment: Qt.AlignHCenter
             spacing: 13
+            NButton {
+                anchors.verticalCenter: parent.verticalCenter
+                implicitWidth: 31; implicitHeight: 31
+                color: "#1C1C1E"; hoverColor: Theme.surface
+                accessibleName: "NexNotch settings"
+                onClicked: tab.notch.openSettings("")
+                NIcon { anchors.centerIn: parent; name: "configure-symbolic"; size: 14; color: Theme.textDim }
+            }
+            PowerButton {
+                label: "System Settings"; icon: "emblem-system-symbolic"
+                onFire: { Sys.runDetached(["systemsettings"]); tab.notch.collapse(); }
+            }
             PowerButton { label: "Lock"; icon: "system-lock-screen-symbolic"; onFire: tab.session.lock() }
             PowerButton {
                 label: "Suspend"; icon: "weather-clear-night-symbolic"
