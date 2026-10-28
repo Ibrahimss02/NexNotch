@@ -4,7 +4,7 @@
     "description": "Dynamic Island for GNOME 46+. A MacBook-notch-style pill replaces the top clock and expands on hover into a swipeable hub: music player with album art and synced lyrics, notification history, live system monitor, Google Calendar via GOA, dual-city weather, Pomodoro timer, notes, Claude Code usage, GNOME quick settings, plus in-notch volume/brightness, charger, drink-water and notification peeks. Built by NexVar.",
     "shell-version": ["46", "47", "48", "49", "50", "51"],
     "url": "https://github.com/Ibrahimss02/NexNotch",
-    "version-name": "1.4.0",
+    "version-name": "1.5.0",
     "settings-schema": "org.gnome.shell.extensions.nexnotch",
     "gettext-domain": "nexnotch"
 }
