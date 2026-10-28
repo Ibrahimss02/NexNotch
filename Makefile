@@ -51,6 +51,8 @@ kde:
 
 kde-install: kde
 	@if [ -x $(KDE_PREFIX)/bin/nexnotch-kde ]; then $(KDE_PREFIX)/bin/nexnotch-kde --quit; fi
+	@# --quit returns before the old one has gone; a new one started meanwhile would just hand over to it
+	@for i in $$(seq 50); do pgrep -x nexnotch-kde >/dev/null || break; sleep 0.1; done
 	cmake --install $(KDE_BUILD)
 	setsid -f $(KDE_PREFIX)/bin/nexnotch-kde >/dev/null 2>&1
 	@echo "NexNotch is running and starts at login. Settings: nexnotch-kde --settings"
