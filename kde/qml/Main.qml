@@ -123,6 +123,7 @@ QtObject {
         if (o.peek) demoPeek(o.peek);
         /* the island states, without a real window under the notch */
         if (o.island) notch.covered = true;
+        if (o.hover) notch.hovered = true;
         if (o.settings) showSettings(o.settings === true ? "" : o.settings);
         const t = Qt.createQmlObject("import QtQuick; Timer {}", app);
         t.interval = Number(o.wait ?? 1500);

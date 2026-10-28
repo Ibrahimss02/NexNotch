@@ -51,14 +51,15 @@ Item {
 
     /* A window behind the notch: it lets go of the screen edge and floats as
        an island, rounded all round. At rest it hides, shrunk to a small spot
-       that still opens it on hover; peeks still show. */
+       that still opens it on hover; peeks still show. Hovering the spot shows
+       a dot at once but opens only after a dwell, so a cursor passing by
+       doesn't pop it open. */
     property bool covered: false
     readonly property int islandGap: 8
     readonly property int islandWidth: 120
+    readonly property int islandDwellMs: 500
     readonly property bool compact: covered && !expanded && !peekActive
     onCompactChanged: resizeCollapsed(true)
-    opacity: compact ? 0 : 1
-    Behavior on opacity { NumberAnimation { duration: 220 } }
 
     signal openSettings(string page)
 
@@ -168,7 +169,7 @@ Item {
 
     Timer {
         id: hoverTimer
-        interval: notch.hoverDelayMs
+        interval: notch.compact ? notch.islandDwellMs : notch.hoverDelayMs
         onTriggered: {
             if (notch.peekActive || pill.buttonHovered) return;
             if (notch.hovered) notch.expand();
@@ -465,6 +466,8 @@ Item {
     Rectangle {
         id: bg
         anchors.fill: parent
+        opacity: notch.compact ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 220 } }
         color: Theme.bg
         topLeftRadius: notch.covered ? notch.radius : 0
         topRightRadius: notch.covered ? notch.radius : 0
@@ -506,9 +509,21 @@ Item {
         }
     }
 
+    Rectangle {
+        anchors.centerIn: parent
+        width: 22; height: 22; radius: 11
+        color: Theme.bg
+        border.color: Qt.rgba(1, 1, 1, 0.18)
+        opacity: notch.compact && notch.hovered ? 1 : 0
+        scale: opacity * 0.4 + 0.6
+        Behavior on opacity { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
+    }
+
     Item {
         id: clipper
         anchors.fill: parent
+        opacity: notch.compact ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: 220 } }
         clip: true      // swiped tab content must not spill past the background
 
         Pill {
