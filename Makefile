@@ -21,6 +21,7 @@ uninstall:
 pack:
 	rm -f $(UUID).shell-extension.zip schemas/gschemas.compiled
 	gnome-extensions pack \
+	    --extra-source=notch.js \
 	    --extra-source=modules \
 	    --extra-source=icons \
 	    --extra-source=README.md \
