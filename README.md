@@ -127,7 +127,13 @@ make kde-install        # builds, installs to ~/.local, starts it, and starts it
 
 How the GNOME-only parts map to Plasma:
 
-- **Notifications**: NexNotch registers as a watcher of Plasma's notification server, so it sees every notification and can run its actions. To keep Plasma's own popups away it holds an "app is inhibiting notifications" request while it runs (Settings › Notifications), which Plasma's bell shows like Do Not Disturb.
+- **Notifications**: NexNotch registers as a watcher of Plasma's notification server, so it sees every notification and can run its actions. To keep Plasma's own popups away it holds an "app is inhibiting notifications" request while it runs (Settings › Notifications), which Plasma's bell shows like Do Not Disturb. Flatpak apps (WhatsApp clients, Telegram…) notify through the desktop portal, whose Plasma backend skips watchers; to get theirs in the notch, route the portal through the GTK backend, which posts them as ordinary notifications:
+  ```sh
+  mkdir -p ~/.config/xdg-desktop-portal
+  sed 's/=plasmanotify$/=gtk/' /usr/share/xdg-desktop-portal/kde-portals.conf > ~/.config/xdg-desktop-portal/kde-portals.conf
+  systemctl --user restart xdg-desktop-portal
+  ```
+  This needs `xdg-desktop-portal-gtk`; delete the file to undo.
 - **Volume OSD**: shown in the notch; Plasma's own volume OSD is switched off while that option is on and restored when it's turned off or NexNotch quits. Plasma's **brightness** OSD can't be turned off on its own, so brightness keys show both.
 - **Calendar**: there's no GNOME Online Accounts on Plasma. Add iCal links (e.g. Google Calendar's *Secret address in iCal format*) in Settings › Calendar, or sign in to Google with your own OAuth client ID for Calendar plus Google Tasks.
 - **Quick tab**: Plasma's own volume, brightness, Wi-Fi, Bluetooth, power profile, Night Light, colour scheme, Do Not Disturb, airplane mode and session actions.
