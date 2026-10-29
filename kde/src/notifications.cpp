@@ -167,19 +167,23 @@ void Notifications::handleNotify(const QVariantList &args)
         actions.append(QVariantMap{{QStringLiteral("key"), rawActions.at(i)}, {QStringLiteral("label"), rawActions.at(i + 1)}});
 
     QString image;
+    QString appIcon = args.at(3).toString();
     for (const char *key : {"image-data", "image_data", "icon_data"}) {
         if (hints.contains(QLatin1String(key))) { image = saveImageData(hints.value(QLatin1String(key)), id); break; }
     }
     if (image.isEmpty()) {
+        /* a path, a URI, or (GLib/GTK apps such as Ghostty) an icon-theme name */
         const QString p = hints.value(QStringLiteral("image-path"), hints.value(QStringLiteral("image_path"))).toString();
-        if (!p.isEmpty()) image = p.startsWith(QLatin1Char('/')) ? QUrl::fromLocalFile(p).toString() : p;
+        if (p.startsWith(QLatin1Char('/'))) image = QUrl::fromLocalFile(p).toString();
+        else if (p.contains(QStringLiteral("://"))) image = p;
+        else if (!p.isEmpty() && appIcon.isEmpty()) appIcon = p;
     }
 
     const QVariantMap n{
         {QStringLiteral("id"), id},
         {QStringLiteral("appName"), args.at(1).toString()},
         {QStringLiteral("replaces"), args.at(2).toUInt()},
-        {QStringLiteral("appIcon"), args.at(3).toString()},
+        {QStringLiteral("appIcon"), appIcon},
         {QStringLiteral("summary"), args.at(4).toString()},
         {QStringLiteral("body"), args.at(5).toString()},
         {QStringLiteral("actions"), actions},
