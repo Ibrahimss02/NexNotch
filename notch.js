@@ -196,6 +196,7 @@ class Notch extends St.Widget {
     setCovered(covered) {
         if (covered === this._covered) return;
         this._covered = covered;
+        this._syncUnredirect();
         this._syncCompact();
         this._resizeCollapsed();
     }
@@ -214,6 +215,17 @@ class Notch extends St.Widget {
         else if (!this._expanded && !this._peekActive) this._collapsed.show();
         if (!compact || !this.hover) this._islandDot.hide();
         this._syncRadius(true);
+    }
+
+    /* A window filling the monitor (fullscreen, or maximized with no panel)
+       gets scanned out directly, skipping the shell's chrome: the notch
+       would react but not draw. */
+    _syncUnredirect() {
+        const want = !this._stopped && this._covered;
+        if (want === !!this._noUnredirect) return;
+        this._noUnredirect = want;
+        if (want) global.compositor.disable_unredirect();
+        else global.compositor.enable_unredirect();
     }
 
     _resizeCollapsed(animate = true) {
@@ -895,6 +907,7 @@ class Notch extends St.Widget {
 
     stop() {
         this._stopped = true;
+        this._syncUnredirect();
         if (this._lyricTimer) { GLib.source_remove(this._lyricTimer); this._lyricTimer = 0; }
         this._updates?.stop();
         this._updates = null;
