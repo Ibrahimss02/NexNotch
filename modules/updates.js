@@ -32,7 +32,7 @@ export class UpdateChecker {
     start() {
         if (!this._repo) return;
         this._settingsId = this._settings.connect('changed::check-updates', () => this._schedule());
-        this._schedule();
+        this._schedule(true);
     }
 
     stop() {
@@ -42,12 +42,12 @@ export class UpdateChecker {
         this._session?.abort();
     }
 
-    /* a minute after login at the soonest, then a day after the last check */
-    _schedule() {
+    /* a minute after login, then a day after the last check */
+    _schedule(atLogin = false) {
         if (this._timer) { GLib.source_remove(this._timer); this._timer = 0; }
         if (!this._settings.get_boolean('check-updates')) return;
         const now = Math.floor(Date.now() / 1000);
-        const wait = Math.max(60, this._settings.get_int64('update-last-check') + DAY_S - now);
+        const wait = atLogin ? 60 : Math.max(60, this._settings.get_int64('update-last-check') + DAY_S - now);
         this._timer = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, wait, () => {
             this._timer = 0;
             this._check();
