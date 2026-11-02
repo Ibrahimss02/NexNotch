@@ -71,11 +71,13 @@ export class Lyrics {
         const params = {track_name: info.title, artist_name: info.artist ?? ''};
         if (info.album) params.album_name = info.album;
         if (seconds) params.duration = String(seconds);
-        let data = await this._request('get', params);
-        if (data === null) {
-            /* no exact match (album/duration differ): best search hit */
+        const exact = await this._request('get', params);
+        let data = exact;
+        if (!exact) {
+            /* no exact match (album/duration differ), or get is overloaded (503): best search hit */
             const hits = await this._request('search', {track_name: info.title, artist_name: info.artist ?? ''});
-            data = Array.isArray(hits) ? (hits.find(h => h.syncedLyrics) ?? hits[0] ?? null) : hits;
+            data = Array.isArray(hits) ? (hits.find(h => h.syncedLyrics) ?? hits[0] ?? exact)
+                : exact === null && hits === null ? null : undefined;
         }
         if (data === undefined) return null;   // network trouble: don't cache, retry next time
         const stored = data
