@@ -263,7 +263,7 @@ void Sys::setAutostart(bool on) const
     if (!on) { QFile::remove(path); return; }
     writeFile(path, QStringLiteral(
         "[Desktop Entry]\nType=Application\nName=NexNotch\nComment=Dynamic Island for KDE Plasma\n"
-        "Exec=%1\nIcon=io.nexvar.NexNotch\nX-KDE-autostart-phase=2\nX-GNOME-Autostart-enabled=true\nNoDisplay=true\n")
+        "Exec=%1\nIcon=io.nexvar.NexNotch\nX-KDE-autostart-phase=2\nOnlyShowIn=KDE;\nNoDisplay=true\n")
         .arg(QCoreApplication::applicationFilePath()));
 }
 
