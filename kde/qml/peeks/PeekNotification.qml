@@ -36,7 +36,7 @@ Item {
     RowLayout {
         anchors.fill: parent
         anchors.leftMargin: peek.inset
-        anchors.rightMargin: peek.inset + 6
+        anchors.rightMargin: peek.inset + 6 + Theme.peekInset
         anchors.topMargin: peek.inset
         anchors.bottomMargin: peek.inset
         spacing: 12

@@ -428,30 +428,44 @@ Item {
     }
     /* a theme's entrance (Golden Loong's dragon) over a card peek; skipped
        for a burst from the same app, and when motion is off */
-    property var entrance: null
+    property var decor: []          // the entrance and the scene layers, gone with the peek
+    property bool sceneOn: false    // a scene brings its own art, so the ear art steps aside
     property string _entranceKey: ""
     property double _entranceAt: 0
     function stopEntrance() {
-        if (!entrance) return;
-        entrance.opacity = 0;
-        entrance.destroy(200);
-        entrance = null;
+        for (const d of decor) {
+            d.opacity = 0;
+            d.destroy(200);
+        }
+        decor = [];
+        sceneOn = false;
+    }
+    function make(file, props) {
+        const comp = Qt.createComponent(Qt.resolvedUrl("themes/" + file + ".qml"));
+        if (comp.status !== Component.Ready) { console.warn("nexnotch: theme", comp.errorString()); return; }
+        const d = comp.createObject(notch, Object.assign({host: notch}, props));
+        if (d) decor = decor.concat([d]);
     }
     function startEntrance(opts, props, h) {
         stopEntrance();
         const t = Theme.selected;
-        if (!t?.enter || !Config.themeEntrance || Config.themeMotion === "still") return;
-        if (!Config.themePeeks.includes(opts.kind) || (opts.kind !== "notification" && opts.kind !== "music")) return;
+        if (!t || !Config.themePeeks.includes(opts.kind)) return;
         const speed = Config.themeFollowPlasmaSpeed ? Kirigami.Units.longDuration / 200 : 1;
-        if (speed <= 0) return;
+        const live = Config.themeMotion === "full" && speed > 0;
+        /* ambient art around a notification: behind the notch, and over its fill under the text */
+        if (t.scene && opts.kind === "notification") {
+            make(t.scene, {peekWidth: opts.width, peekHeight: h, live, back: true, z: -0.5});
+            make(t.scene, {peekWidth: opts.width, peekHeight: h, live, back: false, z: 0.5});
+            sceneOn = true;
+        }
+        if (!t.enter || !Config.themeEntrance || Config.themeMotion === "still" || speed <= 0) return;
+        if (opts.kind !== "notification" && opts.kind !== "music") return;
         const key = opts.kind + ":" + (props?.n?.appName ?? props?.info?.title ?? "");
         const repeat = Config.themeSkipRepeats && key === _entranceKey && Date.now() - _entranceAt < 10000;
         _entranceKey = key;
         _entranceAt = Date.now();
         if (repeat) return;
-        const comp = Qt.createComponent(Qt.resolvedUrl("themes/" + t.enter + ".qml"));
-        if (comp.status !== Component.Ready) { console.warn("nexnotch: entrance", comp.errorString()); return; }
-        entrance = comp.createObject(notch, {host: notch, peekWidth: opts.width, peekHeight: h, speed, ambient: Config.themeMotion === "full", z: 10});
+        make(t.enter, {peekWidth: opts.width, peekHeight: h, speed, ambient: live, z: 10});
     }
     function fitHeight(item) {
         return Math.max(peekOpts.minHeight, Math.min(peekOpts.maxHeight, Math.ceil(item.implicitHeight)));
@@ -574,7 +588,7 @@ Item {
             source: art ? Qt.resolvedUrl("icons/" + art + ".svg") : ""
             sourceSize: Qt.size(140, 96)
             mirror: modelData && Theme.earRightMirrored
-            opacity: notch.compact ? 0 : 1
+            opacity: notch.compact || notch.sceneOn ? 0 : 1
             Behavior on opacity { NumberAnimation { duration: 200 } }
         }
     }
@@ -675,6 +689,7 @@ Item {
     Item {
         id: clipper
         anchors.fill: parent
+        z: 1                // above a theme scene's front layer
         clip: true      // swiped tab content must not spill past the background
 
         Pill {
