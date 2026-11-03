@@ -1435,8 +1435,17 @@ class Notch extends St.Widget {
         art.set_child(new St.Icon({icon_name: this._resolveMediaIcon(info.icon) ?? 'audio-x-generic-symbolic', icon_size: 26}));
         top.add_child(art);
         const text = new St.BoxLayout({...VERTICAL, x_expand: true, y_align: Clutter.ActorAlign.CENTER, style_class: 'nexnotch-player-text'});
+        /* the output only when the player plays here: Spotify Connect,
+           casting and the like have no stream of their own. Gvc doesn't
+           say which sink a stream uses, so this names the default one. */
         let sink = '';
-        try { sink = Volume.getMixerControl().get_default_sink()?.get_description() ?? ''; } catch (_) {}
+        try {
+            const names = [info.app, info.icon, info.icon?.split('.').pop()].filter(Boolean).map(s => s.toLowerCase());
+            const mixer = Volume.getMixerControl();
+            const local = mixer.get_sink_inputs().some(s =>
+                [s.get_name(), s.get_application_id()].some(id => id && names.includes(id.toLowerCase())));
+            if (local) sink = mixer.get_default_sink()?.get_description() ?? '';
+        } catch (_) {}
         const srcBox = new St.BoxLayout({style_class: 'nexnotch-player-source-box'});
         srcBox.add_child(new St.Widget({style_class: 'nexnotch-player-dot', y_align: Clutter.ActorAlign.CENTER}));
         srcBox.add_child(this._ellipsized([info.app, sink].filter(Boolean).join(' · '), 'nexnotch-player-source'));

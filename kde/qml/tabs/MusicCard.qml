@@ -68,7 +68,7 @@ Rectangle {
                             NText {
                                 anchors.verticalCenter: parent.verticalCenter
                                 width: Math.min(implicitWidth, col.width - 160)
-                                text: [card.info.app, Services.audio.sinkName].filter(Boolean).join(" · ")
+                                text: [card.info.app, Services.audio.outputOf(card.info.app, card.info.desktopEntry)].filter(Boolean).join(" · ")
                                 size: 11; color: Theme.textDim
                             }
                         }

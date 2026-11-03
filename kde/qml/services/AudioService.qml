@@ -5,8 +5,9 @@ import org.kde.plasma.private.volume as PA
    Plasma volume widget runs on).
    CONTRACT: volume 0..1 (1 = 100 %, up to maxVolume), muted, sinkName,
    sinks [{id, description, icon, isDefault}], setDefaultSink(id), setVolume(v),
-   toggleMute(), micInUse, micStreams [{app, name (media name: a browser's
-   tab title), title, binary}], micMuted, toggleMicMute(),
+   toggleMute(), outputOf(app, desktopEntry), micInUse, micStreams [{app,
+   name (media name: a browser's tab title), title, binary}], micMuted,
+   toggleMicMute(),
    osd(icon, level, maxLevel, label) for changes made elsewhere while
    Config.replaceOsd. */
 QtObject {
@@ -70,6 +71,7 @@ QtObject {
     }
     function _syncSinks() {
         sinks = _sinkObjects().map(s => ({id: s.index, description: s.description, icon: sinkIcon(s), isDefault: s.default}));
+        _syncPlayback();
     }
     property Connections _sinkRows: Connections {
         target: root._sinkModel
@@ -77,6 +79,37 @@ QtObject {
         function onRowsRemoved() { Qt.callLater(root._syncSinks); }
         function onDataChanged() { Qt.callLater(root._syncSinks); }
         function onModelReset() { Qt.callLater(root._syncSinks); }
+    }
+
+    // ——— playback ———
+
+    /* local playback streams: [{ids: lowercased app names, sink: output description}] */
+    property var playbackStreams: []
+    property PA.SinkInputModel _inputModel: PA.SinkInputModel {}
+    function _syncPlayback() {
+        const outputs = new Map(_rows(_sinkModel).filter(Boolean).map(s => [s.index, s.description]));
+        const streams = [];
+        for (const i of _rows(_inputModel)) {
+            if (!i || i.virtualStream) continue;
+            const p = i.properties ?? {};
+            const ids = [p["application.name"], p["application.process.binary"], p["application.id"],
+                         p["pipewire.access.portal.app_id"], i.client?.name].filter(Boolean).map(s => String(s).toLowerCase());
+            streams.push({ids, sink: outputs.get(i.deviceIndex) ?? ""});
+        }
+        if (JSON.stringify(streams) !== JSON.stringify(playbackStreams)) playbackStreams = streams;
+    }
+    /* the output a player's sound goes to; "" when it plays nothing here
+       (Spotify Connect, casting, a phone through KDE Connect) */
+    function outputOf(app, desktopEntry) {
+        const names = [app, desktopEntry, desktopEntry?.split(".").pop()].filter(Boolean).map(s => s.toLowerCase());
+        return playbackStreams.find(s => s.ids.some(id => names.includes(id)))?.sink ?? "";
+    }
+    property Connections _inputRows: Connections {
+        target: root._inputModel
+        function onRowsInserted() { Qt.callLater(root._syncPlayback); }
+        function onRowsRemoved() { Qt.callLater(root._syncPlayback); }
+        function onDataChanged() { Qt.callLater(root._syncPlayback); }
+        function onModelReset() { Qt.callLater(root._syncPlayback); }
     }
 
     // ——— OSD ———
