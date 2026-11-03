@@ -86,6 +86,10 @@ Settings {
     property bool autostart: true
     property string theme: "plain"          // an id from Themes.js
     property list<string> themePeeks: ["notification", "music", "toggle", "charger"]   // peek kinds the theme paints; privacy never
+    property string themeMotion: "full"     // full | subtle (entrance, no ambient) | still
+    property bool themeEntrance: true
+    property bool themeSkipRepeats: true    // no entrance for the same app again within 10 s
+    property bool themeFollowPlasmaSpeed: true
 
     // quick settings
     property string plasmaOsdBackup: ""     // plasma-pa's own OSD switches while ours replace them (JSON)

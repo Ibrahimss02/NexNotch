@@ -13,6 +13,7 @@
    font/titleFont/clockFont, titleItalic, fontScale/titleScale   type
    cardRadius/iconRadius/barRadius, cornerRadius   corners (null = the user's own)
    dotOff, track, battery   page dots, progress tracks, the pill's battery fill
+   enter               a themes/<name>.qml entrance played over card peeks
    ear/earRight        ornament art in icons/ (70×48, left ear; mirrored for the
                        right unless earRight gives its own) */
 
@@ -33,7 +34,8 @@ var themes = {
         accent: "#F2C14E", onAccent: "#2A0606", frame: "#C9A227", frameW: 1.5, frameIn: Qt.rgba(201/255, 162/255, 39/255, 0.45),
         cardBorder: Qt.rgba(201/255, 162/255, 39/255, 0.35), titleFont: "Noto Serif CJK SC", clockFont: "Noto Serif CJK SC",
         clockSize: 30, pillClockSize: 14, cardRadius: 16, dotOff: Qt.rgba(242/255, 193/255, 78/255, 0.3),
-        track: Qt.rgba(1, 233/255, 176/255, 0.18), battery: "#F2C14E", glow: {color: Qt.rgba(200/255, 16/255, 46/255, 0.35), blur: 50, y: 18}
+        track: Qt.rgba(1, 233/255, 176/255, 0.18), battery: "#F2C14E", glow: {color: Qt.rgba(200/255, 16/255, 46/255, 0.35), blur: 50, y: 18},
+        enter: "LoongFlyby"
     }),
     neon: make("neon", "Neon Circuit", "Mono type throughout, cyan rims with a magenta offset, square tiles and traces off the ears.", {
         bg: "#07040F", card: "#0E0A1C", tile: "#1A0B24", text: "#E6F7FF", dim: "#9AA6D6",

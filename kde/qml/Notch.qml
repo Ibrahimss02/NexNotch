@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
 import QtQuick.Effects
+import org.kde.kirigami as Kirigami
 
 /* The notch: a pill at the top centre that springs open into the tabbed hub
    on hover and peeks open for events. Ported from the GNOME extension's
@@ -420,9 +421,37 @@ Item {
         peekIn.restart();
         const h = opts.fit ? fitHeight(item) : opts.height;
         springTo(opts.width, h, 520, 0.68);
+        startEntrance(opts, props, h);
         if (opts.duration) armPeekTimer(opts.duration);
         else peekTimer.stop();
         return item;
+    }
+    /* a theme's entrance (Golden Loong's dragon) over a card peek; skipped
+       for a burst from the same app, and when motion is off */
+    property var entrance: null
+    property string _entranceKey: ""
+    property double _entranceAt: 0
+    function stopEntrance() {
+        if (!entrance) return;
+        entrance.opacity = 0;
+        entrance.destroy(200);
+        entrance = null;
+    }
+    function startEntrance(opts, props, h) {
+        stopEntrance();
+        const t = Theme.selected;
+        if (!t?.enter || !Config.themeEntrance || Config.themeMotion === "still") return;
+        if (!Config.themePeeks.includes(opts.kind) || (opts.kind !== "notification" && opts.kind !== "music")) return;
+        const speed = Config.themeFollowPlasmaSpeed ? Kirigami.Units.longDuration / 200 : 1;
+        if (speed <= 0) return;
+        const key = opts.kind + ":" + (props?.n?.appName ?? props?.info?.title ?? "");
+        const repeat = Config.themeSkipRepeats && key === _entranceKey && Date.now() - _entranceAt < 10000;
+        _entranceKey = key;
+        _entranceAt = Date.now();
+        if (repeat) return;
+        const comp = Qt.createComponent(Qt.resolvedUrl("themes/" + t.enter + ".qml"));
+        if (comp.status !== Component.Ready) { console.warn("nexnotch: entrance", comp.errorString()); return; }
+        entrance = comp.createObject(notch, {host: notch, peekWidth: opts.width, peekHeight: h, speed, ambient: Config.themeMotion === "full", z: 10});
     }
     function fitHeight(item) {
         return Math.max(peekOpts.minHeight, Math.min(peekOpts.maxHeight, Math.ceil(item.implicitHeight)));
@@ -441,6 +470,7 @@ Item {
         peekTimer.stop();
         if (!peekActive) return;
         peekActive = false;
+        stopEntrance();
         const item = peekItem;
         peekItem = null;
         pill.visible = true;
@@ -540,7 +570,8 @@ Item {
             width: 70 * s; height: 48 * s
             x: modelData ? notch.width - reach : reach - width
             y: 0
-            source: Qt.resolvedUrl("icons/" + (modelData ? Theme.earRight : Theme.earLeft) + ".svg")
+            readonly property string art: modelData ? Theme.earRight : Theme.earLeft
+            source: art ? Qt.resolvedUrl("icons/" + art + ".svg") : ""
             sourceSize: Qt.size(140, 96)
             mirror: modelData && Theme.earRightMirrored
             opacity: notch.compact ? 0 : 1

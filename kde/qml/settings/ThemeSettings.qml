@@ -115,4 +115,44 @@ SettingsPage {
         checked: false
     }
     SettingsHint { text: "Privacy indicators always stay plain so nothing can disguise them." }
+
+    Item {
+        Kirigami.FormData.isSection: true
+        Kirigami.FormData.label: "Motion"
+    }
+    RowLayout {
+        Kirigami.FormData.label: "Intensity:"
+        spacing: 0
+        QQC2.ButtonGroup { id: motionGroup }
+        Repeater {
+            model: [["still", "Still"], ["subtle", "Subtle"], ["full", "Full"]]
+            delegate: QQC2.Button {
+                required property var modelData
+                text: modelData[1]
+                checkable: true
+                checked: Config.themeMotion === modelData[0]
+                QQC2.ButtonGroup.group: motionGroup
+                onClicked: Config.themeMotion = modelData[0]
+            }
+        }
+    }
+    SettingsHint { text: "Still: no animation. Subtle: the entrance without ambient effects. Full: everything." }
+    SettingsSwitch {
+        key: "themeEntrance"
+        text: "Play the theme's entrance"
+        enabled: Config.themeMotion !== "still"
+        Kirigami.FormData.label: "Entrance:"
+    }
+    SettingsSwitch {
+        key: "themeSkipRepeats"
+        text: "Skip it for a burst of messages from the same app"
+        enabled: Config.themeMotion !== "still" && Config.themeEntrance
+        Kirigami.FormData.label: "Repeats:"
+    }
+    SettingsSwitch {
+        key: "themeFollowPlasmaSpeed"
+        text: "Follow Plasma's animation speed setting"
+        enabled: Config.themeMotion !== "still"
+        Kirigami.FormData.label: "System:"
+    }
 }

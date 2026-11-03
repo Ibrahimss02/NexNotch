@@ -9,7 +9,8 @@ import "Themes.js" as Themes
 QtObject {
     property bool plain: false
     property string preview: ""     // dev shots: try a theme without saving it
-    readonly property var t: plain ? null : Themes.themes[preview || Config.theme] ?? null
+    readonly property var selected: Themes.themes[preview || Config.theme] ?? null
+    readonly property var t: plain ? null : selected
     readonly property bool themed: t !== null
     readonly property bool light: t?.light ?? false
 
