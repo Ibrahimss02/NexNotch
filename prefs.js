@@ -76,6 +76,20 @@ export default class NexNotchPrefs extends ExtensionPreferences {
         sizeGroup.add(this._intRow(settings, 'corner-radius',    'Corner radius',       0,  60, 1));
         page.add(sizeGroup);
 
+        /* the ids of modules/themes.js; prefs runs outside the shell, so it can't import that file */
+        const themes = [['plain', 'Plain'], ['loong', 'Golden Loong'], ['neon', 'Neon Circuit'], ['sakura', 'Sakura'],
+            ['pixel', 'Pixel Quest'], ['koi', 'Koi Pond'], ['cosmic', 'Cosmic'], ['neko', 'Neko'], ['frost', 'Frost'],
+            ['storm', 'Storm'], ['sumi', 'Sumi-e (light)']];
+        const themeGroup = new Adw.PreferencesGroup({
+            title: 'Theme',
+            description: 'Repaints the notch: fill, frame, cards and text. Camera and mic peeks always stay plain. Plain uses the colors below.',
+        });
+        const themeRow = new Adw.ComboRow({title: 'Island theme', model: Gtk.StringList.new(themes.map(t => t[1]))});
+        themeRow.selected = Math.max(0, themes.findIndex(t => t[0] === settings.get_string('theme')));
+        themeRow.connect('notify::selected', () => settings.set_string('theme', themes[themeRow.selected][0]));
+        themeGroup.add(themeRow);
+        page.add(themeGroup);
+
         const colorGroup = new Adw.PreferencesGroup({
             title: 'Colors',
             description: 'Pick any color + opacity. Presets give Apple-like looks instantly.',

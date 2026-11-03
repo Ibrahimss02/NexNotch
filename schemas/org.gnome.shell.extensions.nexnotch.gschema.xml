@@ -38,6 +38,7 @@
     <!-- colors (CSS rgba strings so users can use any transparency) -->
     <key name="bg-color"         type="s"><default>"rgba(0, 0, 0, 1.0)"</default><summary>Notch background color</summary></key>
     <key name="accent-color"     type="s"><default>"rgba(120, 170, 255, 0.32)"</default><summary>Accent color (active tab, bar fill)</summary></key>
+    <key name="theme"            type="s"><default>"plain"</default><summary>Island theme (plain, loong, neon, sakura, pixel, koi, cosmic, neko, frost, storm, sumi)</summary></key>
 
     <!-- battery icon tinting -->
     <key name="battery-charging-color" type="s"><default>"rgba(80, 220, 120, 1.0)"</default><summary>Battery icon color while charging</summary></key>

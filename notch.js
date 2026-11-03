@@ -28,6 +28,7 @@ import {QuickHub}         from './modules/quick.js';
 import {ClaudeUsage}      from './modules/claudeusage.js';
 import {Lyrics, lineAt}   from './modules/lyrics.js';
 import {PowerWatcher, State as PowerState} from './modules/power.js';
+import {ThemeSheet, THEMES} from './modules/themes.js';
 import {WaterReminder, CUP_ICON} from './modules/water.js';
 import {Shelf} from './modules/shelf.js';
 import {BatteryGlyph, Waveform, VERTICAL} from './modules/ui.js';
@@ -92,6 +93,7 @@ class Notch extends St.Widget {
 
         this._loadDims();
         this.set_size(this._cwMin, this._ch);
+        this._themeSheet = new ThemeSheet(extension.path);
 
         this._buildLayers();
         this._setupDnd();
@@ -177,7 +179,8 @@ class Notch extends St.Widget {
         this._ch    = this._settings.get_int('collapsed-height');
         this._ew    = this._settings.get_int('expanded-width');
         this._eh    = this._settings.get_int('expanded-height');
-        this._radius = this._settings.get_int('corner-radius');
+        this._theme = THEMES[this._settings.get_string('theme')] ?? null;
+        this._radius = this._theme?.cornerRadius ?? this._settings.get_int('corner-radius');
     }
 
     _measureCollapsedWidth() {
@@ -246,7 +249,12 @@ class Notch extends St.Widget {
         let bg = this._settings.get_string('bg-color') || '';
         if (!bg.match(/^rgba?\(/)) bg = 'rgb(0, 0, 0)';
         const accent   = this._settings.get_string('accent-color');
-        this._bgColor = bg;
+        /* a theme repaints the notch; camera/mic peeks stay plain (_plainPeek) */
+        const th = this._plainPeek ? null : this._theme;
+        this._themeSheet.apply(this._theme?.id ?? 'plain');
+        if (th) this.add_style_class_name('nexnotch-themed');
+        else this.remove_style_class_name('nexnotch-themed');
+        this._bgColor = th?.bg ?? bg;
         this._syncRadius(true);
 
         this._accentColor = accent;
@@ -260,10 +268,16 @@ class Notch extends St.Widget {
         const gradient = this._lyricTint && !this._expanded && !compact
             ? `background-gradient-direction: vertical; background-gradient-start: ${this._bgColor}; background-gradient-end: ${this._lyricTint};`
             : '';
+        const th = this._plainPeek ? null : this._theme;
+        /* the theme's frame: down the sides and round the bottom, or all round the island */
+        const frame = th && !compact
+            ? `border: ${th.frameW}px solid ${th.frame}; border-top-width: ${this._covered ? th.frameW : 0}px;`
+            : '';
         return `
             background-color: ${compact ? 'transparent' : this._bgColor};
             border-radius: ${this._radiiFor(radius)};
-            ${gradient}
+            ${frame}
+            ${th ? '' : gradient}
         `;
     }
 
@@ -347,6 +361,11 @@ class Notch extends St.Widget {
             this._collapsed.height = this._ch;
             this._expandedLayer.width = this._ew;
             if (this._expanded) { this._stopSizeAnim(); this.set_size(this._ew, this._expandedHeight()); }
+            this._applyColors();
+        }
+        if (key === 'theme') {
+            this._loadDims();
+            if (!this._expanded && !this._peekActive) this._resizeCollapsed(false);
             this._applyColors();
         }
         if (['bg-color', 'accent-color', 'corner-radius',
@@ -940,6 +959,7 @@ class Notch extends St.Widget {
     }
 
     _onDestroy() {
+        this._themeSheet?.destroy();
         this._clearHoverTimeout();
         this._clearCollapseTimeout();
         this._stopClock();
@@ -1690,9 +1710,10 @@ class Notch extends St.Widget {
 
     /* Compact peek: `content` fills the notch at width×height for `duration`
        ms (0 = until dismissed). Hovering holds it open; leaving dismisses. */
-    _showPeek(content, {width, height, duration = PEEK_DURATION_MS, onClick = null, hold = true}) {
+    _showPeek(content, {width, height, duration = PEEK_DURATION_MS, onClick = null, hold = true, plain = false}) {
         if (this._expanded) return null;
         this._dismissPeek(true);
+        if (plain !== !!this._plainPeek) { this._plainPeek = plain; this._applyColors(); }
         const peek = new St.BoxLayout({style_class: 'nexnotch-peek-host', x_expand: true, y_expand: true,
             reactive: true, track_hover: true});
         peek.add_child(content);
@@ -1952,7 +1973,7 @@ class Notch extends St.Widget {
             [app ? `by ${app}` : null, 'nexnotch-peek-privacy-app'],
         ]);
         row.add_style_class_name('privacy');
-        this._showPeek(row, {width: 270, height: 47, duration: POWER_PEEK_MS});
+        this._showPeek(row, {width: 270, height: 47, duration: POWER_PEEK_MS, plain: true});
     }
 
     _peekMeeting() {
@@ -1961,7 +1982,7 @@ class Notch extends St.Widget {
             child: new St.Icon({gicon: ownIcon('camera'), style_class: 'nexnotch-peek-privacy-icon'})});
         const row = this._peekCard(badge, [['In a meeting', 'nexnotch-peek-privacy-title'], [this._meeting.service, 'nexnotch-peek-privacy-app']]);
         row.add_style_class_name('privacy');
-        this._showPeek(row, {width: 270, height: 47, duration: POWER_PEEK_MS, onClick: () => this._goToMeeting()});
+        this._showPeek(row, {width: 270, height: 47, duration: POWER_PEEK_MS, plain: true, onClick: () => this._goToMeeting()});
     }
 
     _micApp() {
@@ -2218,6 +2239,7 @@ class Notch extends St.Widget {
         if (this._peekTimer) { GLib.source_remove(this._peekTimer); this._peekTimer = 0; }
         if (!this._peekActive) return;
         this._peekActive = false;
+        if (this._plainPeek) { this._plainPeek = false; this._applyColors(); }
         const finalize = () => {
             this._peekLayer?.destroy();
             this._peekLayer = null;
