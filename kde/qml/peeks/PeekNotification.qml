@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Shapes
 
 /* A notification, like a native banner: hover holds it open and shows the
    whole body and its actions; click opens it, ✕ dismisses it. */
@@ -16,6 +17,13 @@ Item {
         if (lines.length > 6) body = lines.slice(0, 6).join("\n") + "\n…";
         if (body.length > 360) body = body.slice(0, 360) + "…";
         return body.trim();
+    }
+    /* a theme's touches: tile, title case, timestamp and body styling */
+    readonly property var look: Theme.peek
+    function cased(s, how) {
+        if (how === "upper") return s.toUpperCase();
+        if (how === "snake") return s.toUpperCase().replace(/\s+/g, "_");
+        return s;
     }
     /* the icon sits concentric with the notch's rounded end: same inset on all sides */
     readonly property int inset: 14
@@ -48,8 +56,20 @@ Item {
             Rectangle {
                 id: iconTile
                 width: 44; height: 44
-                radius: Math.min(width / 2, Math.max(8, peek.notch.radius - peek.inset))
-                color: Theme.surface
+                radius: Theme.themed ? Math.min(width / 2, Theme.iconRadius + 4) : Math.min(width / 2, Math.max(8, peek.notch.radius - peek.inset))
+                color: peek.look.enso ? "transparent" : Theme.surface
+                border.color: peek.look.tileBorder ?? "transparent"
+                border.width: peek.look.tileBorder ? 1 : 0
+                /* Sumi-e: an open ink ring instead of a tile */
+                Shape {
+                    visible: !!peek.look.enso
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
+                    ShapePath {
+                        fillColor: "transparent"; strokeColor: Theme.text; strokeWidth: 3.6; capStyle: ShapePath.RoundCap
+                        PathSvg { path: "M24 4 A18 18 0 1 1 8 12" }
+                    }
+                }
                 RoundedImage {
                     visible: !!peek.n.image
                     anchors.fill: parent
@@ -60,7 +80,8 @@ Item {
                     visible: !peek.n.image
                     anchors.centerIn: parent
                     name: Services.notifications.iconFor(peek.n)
-                    size: 28
+                    size: peek.look.enso ? 18 : 28
+                    color: peek.look.icon ?? (Theme.themed ? Theme.accent : Theme.text)
                 }
             }
             NButton {
@@ -81,17 +102,56 @@ Item {
             Layout.fillWidth: true
             Layout.alignment: implicitHeight < iconTile.height ? Qt.AlignVCenter : Qt.AlignTop
             spacing: 1
+            /* Neon: the text jumps a pixel now and then */
+            transform: Translate { id: jitter }
+            SequentialAnimation {
+                running: !!peek.look.glitch && Config.themeMotion === "full"
+                loops: Animation.Infinite
+                PauseAnimation { duration: 3220 }
+                PropertyAction { target: jitter; property: "x"; value: -2 }
+                PropertyAction { target: jitter; property: "y"; value: 1 }
+                PauseAnimation { duration: 70 }
+                PropertyAction { target: jitter; property: "x"; value: 2 }
+                PropertyAction { target: jitter; property: "y"; value: -1 }
+                PauseAnimation { duration: 70 }
+                PropertyAction { target: jitter; property: "x"; value: -1 }
+                PropertyAction { target: jitter; property: "y"; value: 0 }
+                PauseAnimation { duration: 70 }
+                PropertyAction { target: jitter; property: "x"; value: 0 }
+            }
             RowLayout {
                 Layout.fillWidth: true
-                NText { Layout.fillWidth: true; text: peek.n.summary || peek.n.appName || "Notification"; size: 13; weight: Font.DemiBold; title: true }
-                NText { text: "now"; size: 11; color: Theme.textDim; leftPadding: 6 }
+                spacing: 8
+                NText {
+                    Layout.fillWidth: !peek.look.seal
+                    Layout.maximumWidth: peek.look.seal ? textCol.width - 80 : -1
+                    text: peek.cased(peek.n.summary || peek.n.appName || "Notification", peek.look.titleCase)
+                    size: 13; weight: Font.DemiBold; title: true
+                    color: peek.look.title ?? Theme.text
+                    font.letterSpacing: peek.look.titleCase ? 0.5 : 0
+                }
+                /* Sumi-e's red seal after the name */
+                Rectangle {
+                    visible: !!peek.look.seal
+                    width: 17; height: 17; radius: 2
+                    color: "#B22222"
+                    Text { anchors.centerIn: parent; text: peek.look.seal ?? ""; color: "#F7EFE0"; font.family: "Noto Serif CJK SC"; font.weight: Font.Black; font.pixelSize: 11 }
+                }
+                Item { visible: !!peek.look.seal; Layout.fillWidth: true }
+                NText {
+                    text: (peek.look.metaFormat ?? "%1").arg(peek.cased("now", peek.look.metaCase))
+                    size: peek.look.metaFont ? 8 : 11
+                    font.family: peek.look.metaFont ?? Theme.font
+                    color: peek.look.meta ?? (Theme.themed ? Theme.accent : Theme.textDim)
+                    leftPadding: 6
+                }
             }
             NText {
                 Layout.fillWidth: true
                 visible: !!peek.bodyText
-                text: peek.bodyText
+                text: (peek.look.bodyPrefix ?? "") + peek.bodyText
                 size: 12
-                color: Theme.textDim
+                color: peek.look.body ?? Theme.textDim
                 wrapMode: peek.open ? Text.Wrap : Text.NoWrap
                 maximumLineCount: peek.open ? 8 : 1
             }

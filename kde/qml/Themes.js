@@ -16,6 +16,10 @@
    enter               a themes/<name>.qml entrance played over card peeks
    scene               a themes/<name>.qml ambient scene around notification peeks;
                        peekInset keeps the text clear of it
+   stepped             pixel-stepped corners instead of round ones
+   peek                inside a notification: tileBorder, icon, title, titleCase
+                       (upper | snake), meta, metaFormat, metaFont, metaCase, body,
+                       bodyPrefix, glitch, enso (brush ring for a tile), seal
    ear/earRight        ornament art in icons/ (70×48, left ear; mirrored for the
                        right unless earRight gives its own) */
 
@@ -46,7 +50,8 @@ var themes = {
         clockSize: 28, pillClockSize: 13, cardRadius: 6, iconRadius: 4, barRadius: 0,
         dotOff: Qt.rgba(0, 229/255, 1, 0.25), track: Qt.rgba(0, 229/255, 1, 0.18), battery: "#00E5FF",
         glow: {color: Qt.rgba(0, 229/255, 1, 0.25), blur: 50, y: 18}, offset: {color: Qt.rgba(1, 43/255, 214/255, 0.5), x: -3, y: 2},
-        scene: "NeonScene"
+        scene: "NeonScene",
+        peek: {tileBorder: "#FF2BD6", icon: "#FF2BD6", title: "#00E5FF", titleCase: "snake", meta: "#FF7BE5", metaFormat: "[%1]", body: "#C3CCFF", bodyPrefix: "> ", glitch: true}
     }),
     sakura: make("sakura", "Sakura", "Italic serif clock, petal-pink accents and a blossoming sprig at each ear.", {
         bg: "#140A10", card: "#22121A", tile: "#3A1A26", text: "#FFE3EC", dim: "#CDB0BB",
@@ -62,7 +67,8 @@ var themes = {
         font: "VT323", titleFont: "Press Start 2P", clockFont: "Press Start 2P", fontScale: 1.3, titleScale: 0.72,
         clockSize: 22, pillClockSize: 10, cardRadius: 0, iconRadius: 0, barRadius: 0, cornerRadius: 10,
         dotOff: "#566C86", track: "#333C57", battery: "#38B764", glow: null,
-        scene: "PixelScene"
+        scene: "PixelScene", stepped: true,
+        peek: {title: "#FFCD75", titleCase: "upper", meta: "#73EFF7", metaFont: "Press Start 2P", metaCase: "upper", body: "#F4F4F4"}
     }),
     koi: make("koi", "Koi Pond", "Pond blues with koi-orange touches; lily pads and a koi at the ears.", {
         bg: "#04161F", card: "#0A2430", tile: "#0B3340", text: "#E6FAFF", dim: "#9CC3D1",
@@ -106,7 +112,8 @@ var themes = {
         titleFont: "Noto Serif CJK SC", clockFont: "Noto Serif CJK SC", clockSize: 30, pillClockSize: 14, cardRadius: 12,
         dotOff: Qt.rgba(26/255, 26/255, 26/255, 0.25), track: Qt.rgba(26/255, 26/255, 26/255, 0.15), battery: "#2E7D32",
         glow: {color: Qt.rgba(0, 0, 0, 0.35), blur: 50, y: 18}, earRight: "theme-sumi-right",
-        scene: "SumiScene", peekInset: 62
+        scene: "SumiScene", peekInset: 62,
+        peek: {enso: true, icon: "#3A332B", seal: "墨", meta: "#8E1B1B"}
     })
 };
 

@@ -596,16 +596,43 @@ Item {
     Rectangle {
         id: bg
         anchors.fill: parent
-        color: Theme.bg
+        color: Theme.stepped ? "transparent" : Theme.bg
         topLeftRadius: notch.radius * notch.island
         topRightRadius: notch.radius * notch.island
         bottomLeftRadius: notch.radius
         bottomRightRadius: notch.radius
-        gradient: notch.lyricTint.a > 0 && !notch.expanded ? lyricGradient : null
+        gradient: notch.lyricTint.a > 0 && !notch.expanded && !Theme.stepped ? lyricGradient : null
         Gradient {
             id: lyricGradient
             GradientStop { position: 0; color: Theme.bg }
             GradientStop { position: 1; color: notch.lyricTint }
+        }
+        /* Pixel Quest: corners cut in 8 px steps, framed in white */
+        Shape {
+            id: steps
+            visible: Theme.stepped
+            readonly property real w: notch.width
+            readonly property real h: notch.height
+            readonly property real s: Math.min(8, h / 4)
+            readonly property bool roundTop: notch.island > 0.5
+            function outline(closed) {
+                const w = steps.w, h = steps.h, s = steps.s;
+                const bottom = `L ${w} ${h - 2 * s} L ${w - s} ${h - 2 * s} L ${w - s} ${h - s} L ${w - 2 * s} ${h - s} L ${w - 2 * s} ${h} L ${2 * s} ${h} L ${2 * s} ${h - s} L ${s} ${h - s} L ${s} ${h - 2 * s} L 0 ${h - 2 * s}`;
+                if (!steps.roundTop) return closed ? `M 0 0 L ${w} 0 ${bottom} Z` : `M ${w} 0 ${bottom} L 0 0`;
+                return `M 0 ${2 * s} L ${s} ${2 * s} L ${s} ${s} L ${2 * s} ${s} L ${2 * s} 0 L ${w - 2 * s} 0 L ${w - 2 * s} ${s} L ${w - s} ${s} L ${w - s} ${2 * s} ${bottom} Z`;
+            }
+            ShapePath {
+                fillColor: Theme.bg
+                strokeColor: "transparent"
+                PathSvg { path: steps.outline(true) }
+            }
+            ShapePath {
+                fillColor: "transparent"
+                strokeColor: notch.compact ? "transparent" : Theme.frame
+                strokeWidth: Theme.frameW
+                joinStyle: ShapePath.MiterJoin
+                PathSvg { path: steps.outline(false) }
+            }
         }
     }
 
@@ -640,7 +667,7 @@ Item {
        all the way round the island; Golden Loong adds an inner line */
     Shape {
         id: frameShape
-        visible: Theme.frameW > 0 && !notch.compact
+        visible: Theme.frameW > 0 && !notch.compact && !Theme.stepped
         preferredRendererType: Shape.CurveRenderer
         readonly property real r: notch.radius
         readonly property real w: notch.width
@@ -667,7 +694,7 @@ Item {
         }
     }
     Rectangle {
-        visible: Theme.frameW > 0 && !notch.compact
+        visible: Theme.frameW > 0 && !notch.compact && !Theme.stepped
         anchors.fill: parent
         opacity: notch.island
         color: "transparent"

@@ -47,6 +47,8 @@ QtObject {
     readonly property real iconRadius: t?.iconRadius ?? 14
     readonly property real barRadius: t?.barRadius ?? 2
     readonly property int cornerRadius: t?.cornerRadius ?? Config.cornerRadius
+    readonly property var peek: t?.peek ?? ({})
+    readonly property bool stepped: t?.stepped ?? false
     readonly property int peekInset: t?.peekInset ?? 0     // room a scene keeps clear at a notification's right end
 
     /* system colours; a light theme takes the darker light-mode set so they read on paper */

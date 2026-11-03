@@ -52,4 +52,22 @@ Scene {
             color: modelData[2]
         }
     }
+    /* CRT scanlines over the peek, kept inside its rounded bottom */
+    Item {
+        visible: !s.back
+        x: -s.x
+        Repeater {
+            model: Math.floor(s.host.height / 3)
+            Rectangle {
+                required property int index
+                readonly property real yy: index * 3 + 1
+                readonly property real r: s.host.radius
+                readonly property real h: s.host.height
+                readonly property real cut: yy > h - r ? r - Math.sqrt(Math.max(0, r * r - Math.pow(yy - (h - r), 2))) : 0
+                x: cut; y: yy
+                width: s.host.width - 2 * cut; height: 1
+                color: Qt.rgba(1, 1, 1, 0.045)
+            }
+        }
+    }
 }
