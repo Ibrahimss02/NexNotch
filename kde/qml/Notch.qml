@@ -632,30 +632,80 @@ Item {
                     }
                 }
 
-                /* tabs change by swiping; the dots show where you are and can be clicked */
-                Row {
+                /* tabs change by swiping; the dots show where you are. Hovering lifts
+                   and enlarges them, and the dot under the cursor opens into a pill
+                   with its name. The pill overflows the dots' 5px so hovering never
+                   changes the notch's height. */
+                Item {
                     id: dots
-                    Layout.alignment: Qt.AlignHCenter
+                    Layout.fillWidth: true
                     Layout.topMargin: 2
-                    spacing: 5
-                    Repeater {
-                        model: notch.tabOrder
-                        Rectangle {
-                            required property string modelData
-                            readonly property bool current: modelData === notch.activeTab
-                            width: current ? 16 : 5
-                            height: 5; radius: 3
-                            color: current ? Theme.text : dotMouse.containsMouse ? "#7C7C80" : Theme.disabled
-                            Behavior on width { NumberAnimation { duration: 200 } }
-                            Accessible.role: Accessible.PageTab
-                            Accessible.name: notch.tabLabels[modelData]
-                            MouseArea {
-                                id: dotMouse
-                                anchors.fill: parent
-                                anchors.margins: -4
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: notch.goToTab(parent.modelData)
+                    implicitHeight: 5
+
+                    Item {
+                        id: dotZone
+                        readonly property bool open: dotHover.hovered
+                        property string hot: ""
+                        onOpenChanged: if (!open) hot = ""
+                        anchors.centerIn: parent
+                        width: chipRow.width + 24
+                        height: 34
+                        HoverHandler { id: dotHover }
+
+                        Row {
+                            id: chipRow
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.verticalCenterOffset: dotZone.open ? -5 : 0
+                            height: 20
+                            spacing: dotZone.open ? 6 : 5
+                            Behavior on spacing { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+                            Behavior on anchors.verticalCenterOffset { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+                            Repeater {
+                                model: notch.tabOrder
+                                Rectangle {
+                                    id: chip
+                                    required property string modelData
+                                    readonly property bool current: modelData === notch.activeTab
+                                    readonly property bool hot: dotZone.open && dotZone.hot === modelData
+                                    width: hot ? chipLabel.implicitWidth + 18 : current ? (dotZone.open ? 18 : 16) : dotZone.open ? 7 : 5
+                                    height: hot ? 20 : dotZone.open ? 7 : 5
+                                    y: (chipRow.height - height) / 2
+                                    radius: height / 2
+                                    color: current ? Theme.text
+                                        : hot ? Theme.surfaceHi
+                                        : dotZone.open ? Theme.dot : Theme.disabled
+                                    Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+                                    Behavior on height { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+                                    Behavior on color { ColorAnimation { duration: 200 } }
+                                    Accessible.role: Accessible.PageTab
+                                    Accessible.name: notch.tabLabels[modelData]
+                                    Item {
+                                        anchors.fill: parent
+                                        clip: true
+                                        NText {
+                                            id: chipLabel
+                                            anchors.centerIn: parent
+                                            text: notch.tabLabels[chip.modelData]
+                                            size: 11
+                                            weight: Font.DemiBold
+                                            color: chip.current ? "#000000" : Theme.text
+                                            opacity: chip.hot ? 1 : 0
+                                            Behavior on opacity { NumberAnimation { duration: chip.hot ? 220 : 120; easing.type: Easing.OutQuad } }
+                                        }
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: -chipRow.spacing / 2
+                                        anchors.rightMargin: -chipRow.spacing / 2
+                                        anchors.topMargin: -8
+                                        anchors.bottomMargin: -8
+                                        hoverEnabled: true
+                                        cursorShape: Qt.PointingHandCursor
+                                        onContainsMouseChanged: if (containsMouse) dotZone.hot = chip.modelData
+                                        onClicked: notch.goToTab(chip.modelData)
+                                    }
+                                }
                             }
                         }
                     }
