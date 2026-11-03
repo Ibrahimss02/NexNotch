@@ -45,6 +45,11 @@ foreach(f IN LISTS NEXNOTCH_ICONS)
     get_filename_component(name ${f} NAME)
     set_source_files_properties(${f} PROPERTIES QT_RESOURCE_ALIAS "icons/${name}")
 endforeach()
+file(GLOB NEXNOTCH_FONTS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/data/fonts/*.ttf)
+foreach(f IN LISTS NEXNOTCH_FONTS)
+    get_filename_component(name ${f} NAME)
+    set_source_files_properties(${f} PROPERTIES QT_RESOURCE_ALIAS "fonts/${name}")
+endforeach()
 foreach(f IN LISTS NEXNOTCH_QML)
     get_filename_component(name ${f} NAME)
     if(name MATCHES "^(Theme|Config|Services)\\.qml$")
@@ -56,7 +61,7 @@ qt_add_qml_module(nexnotch-kde
     URI NexNotch
     VERSION 1.0
     QML_FILES ${NEXNOTCH_QML}
-    RESOURCES ${NEXNOTCH_ICONS}
+    RESOURCES ${NEXNOTCH_ICONS} ${NEXNOTCH_FONTS}
 )
 
 target_include_directories(nexnotch-kde PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

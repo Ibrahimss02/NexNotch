@@ -84,6 +84,8 @@ Settings {
     property string googleClientId: ""      // optional: Google Calendar + Tasks through your own OAuth client
     property string googleClientSecret: ""
     property bool autostart: true
+    property string theme: "plain"          // an id from Themes.js
+    property list<string> themePeeks: ["notification", "music", "toggle", "charger"]   // peek kinds the theme paints; privacy never
 
     // quick settings
     property string plasmaOsdBackup: ""     // plasma-pa's own OSD switches while ours replace them (JSON)

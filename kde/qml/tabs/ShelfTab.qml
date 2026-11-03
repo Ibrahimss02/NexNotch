@@ -55,7 +55,7 @@ Item {
             width: parent.width
             height: 117
             radius: 25
-            color: "#08182C"
+            color: Theme.themed ? Qt.alpha(Theme.blue, 0.12) : "#08182C"
             border.color: Theme.blue
             border.width: 2
             Column {
@@ -102,7 +102,7 @@ Item {
                     width: 112; height: 126
                     radius: 20
                     color: "transparent"
-                    border.color: "#48484A"
+                    border.color: Theme.disabled
                     border.width: 1.5
                     Column {
                         y: 32
@@ -142,7 +142,7 @@ Item {
             implicitWidth: 112; implicitHeight: 126
             opacity: tile.item.exists ? 1 : 0.45
             radius: 20
-            color: "#1C1C1E"; hoverColor: "#232326"; pressColor: "#2C2C2E"
+            color: Theme.card; hoverColor: Theme.cardHover; pressColor: Theme.surface
             accessibleName: tile.item.name
             onClicked: tab.shelf.open(tile.item.url)
             onHoveredChanged: if (hovered && !tile.grab) tile.grabToImage(r => tile.grab = r)
@@ -230,6 +230,6 @@ Item {
         implicitWidth: 20; implicitHeight: 20
         radius: 10
         color: Theme.surfaceHi; hoverColor: Theme.disabled; pressColor: Theme.disabled
-        NIcon { anchors.centerIn: parent; name: act.icon; size: 9; color: "#E5E5EA" }
+        NIcon { anchors.centerIn: parent; name: act.icon; size: 9; color: Theme.textSoft }
     }
 }

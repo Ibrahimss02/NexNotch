@@ -17,8 +17,9 @@ Item {
         anchors.right: chart.left
         anchors.rightMargin: 9
         height: mainCol.implicitHeight + 16 + 11
-        radius: 23
-        color: "#1C1C1E"
+        radius: Theme.cardRadius
+        color: Theme.card
+        border.color: Theme.cardBorder; border.width: Theme.cardBorderW
 
         Column {
             id: mainCol
@@ -34,7 +35,7 @@ Item {
                         anchors.fill: parent
                         size: 97
                         thickness: 11
-                        track: "#0B3340"
+                        track: Theme.themed ? Qt.alpha(Theme.cyan, 0.2) : "#0B3340"
                         color: Theme.cyan
                         frac: tab.water.cups / tab.goal
                         Accessible.role: Accessible.ProgressBar
@@ -61,15 +62,15 @@ Item {
                             implicitWidth: drinkRow.implicitWidth + 32
                             implicitHeight: 36
                             radius: 18
-                            color: Theme.cyan; hoverColor: "#8FE0FF"; pressColor: "#8FE0FF"
+                            color: Theme.cyan; hoverColor: Theme.light ? Qt.darker(Theme.cyan, 1.15) : "#8FE0FF"; pressColor: hoverColor
                             accessibleName: "Log a cup of water"
                             onClicked: tab.water.drink()
                             Row {
                                 id: drinkRow
                                 anchors.centerIn: parent
                                 spacing: 5
-                                NIcon { anchors.verticalCenter: parent.verticalCenter; name: "list-add-symbolic"; size: 14; color: "black" }
-                                NText { anchors.verticalCenter: parent.verticalCenter; text: "Drink"; size: 13; weight: Font.DemiBold; color: "black" }
+                                NIcon { anchors.verticalCenter: parent.verticalCenter; name: "list-add-symbolic"; size: 14; color: Theme.light ? "white" : "black" }
+                                NText { anchors.verticalCenter: parent.verticalCenter; text: "Drink"; size: 13; weight: Font.DemiBold; color: Theme.light ? "white" : "black" }
                             }
                         }
                         NButton {
@@ -101,7 +102,7 @@ Item {
                     anchors.right: parent.right
                     anchors.verticalCenter: remCol.verticalCenter
                     implicitWidth: 42; implicitHeight: 24
-                    color: Config.showWater ? Theme.blue : "#48484A"
+                    color: Config.showWater ? Theme.blue : Theme.disabled
                     hoverColor: Qt.lighter(color, 1.15)
                     pressColor: hoverColor
                     accessibleName: "Drink-water reminders"
@@ -126,8 +127,9 @@ Item {
         anchors.right: parent.right
         width: 238
         height: chartCol.implicitHeight + 14 + 13
-        radius: 23
-        color: "#1C1C1E"
+        radius: Theme.cardRadius
+        color: Theme.card
+        border.color: Theme.cardBorder; border.width: Theme.cardBorderW
 
         /* re-read with each drink and as the hours move on */
         readonly property var hours: { tab.water.cups; tab.water._now; return tab.water.hourly(); }
@@ -165,7 +167,7 @@ Item {
                             required property var modelData
                             width: bars.barW; height: bars.height
                             radius: 4
-                            color: "#262629"
+                            color: Theme.themed ? Theme.track : "#262629"
                             Rectangle {
                                 visible: modelData.cups > 0
                                 anchors.bottom: parent.bottom
@@ -180,9 +182,9 @@ Item {
                 Item {
                     id: axis
                     width: 13; height: 106
-                    NText { x: 6; anchors.top: parent.top; text: chart.peak; size: 10; color: "#8E8E93"; tnum: true }
-                    NText { x: 6; anchors.verticalCenter: parent.verticalCenter; text: chart.peak / 2; size: 10; color: "#8E8E93"; tnum: true }
-                    NText { x: 6; anchors.bottom: parent.bottom; text: "0"; size: 10; color: "#8E8E93"; tnum: true }
+                    NText { x: 6; anchors.top: parent.top; text: chart.peak; size: 10; color: Theme.textTertiary; tnum: true }
+                    NText { x: 6; anchors.verticalCenter: parent.verticalCenter; text: chart.peak / 2; size: 10; color: Theme.textTertiary; tnum: true }
+                    NText { x: 6; anchors.bottom: parent.bottom; text: "0"; size: 10; color: Theme.textTertiary; tnum: true }
                 }
             }
 
@@ -194,7 +196,7 @@ Item {
                         required property int index
                         width: bars.barW + bars.spacing
                         text: index % 3 === 0 ? String(modelData.hour).padStart(2, "0") : ""
-                        size: 10; color: "#8E8E93"; tnum: true
+                        size: 10; color: Theme.textTertiary; tnum: true
                         elide: Text.ElideNone
                     }
                 }

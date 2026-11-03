@@ -18,7 +18,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: 25
-            color: "#08182C"
+            color: Theme.themed ? Qt.alpha(Theme.blue, 0.12) : "#08182C"
             border.color: Theme.blue
             border.width: 2
             Column {

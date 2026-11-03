@@ -34,7 +34,7 @@ Item {
         if (!b) return Config.batteryNormalColor;
         if (b.plugged || b.status === "charging") return Config.batteryChargingColor;
         if (b.status === "discharging" && b.capacity < 20) return Config.batteryLowColor;
-        return Config.batteryNormalColor;
+        return Theme.battery;
     }
 
     // ——— normal: battery · clock · date ———
@@ -69,8 +69,9 @@ Item {
                 id: clockText
                 anchors.centerIn: parent
                 text: pill.notch.clock.time
-                size: 13; weight: Font.DemiBold; tnum: true
-                color: Qt.rgba(1, 1, 1, 0.96)
+                size: Theme.pillClockSize; weight: Font.DemiBold; tnum: true
+                font.family: Theme.clockFont; font.italic: Theme.titleItalic; font.pixelSize: size
+                color: Theme.text
             }
         }
         Row {

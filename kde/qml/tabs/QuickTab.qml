@@ -144,7 +144,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             name: pill.icon
             size: 18
-            color: pill.shown / pill.maxValue > 0.1 ? "#000000" : Theme.textDim
+            color: pill.shown / pill.maxValue > 0.1 ? Qt.alpha(Theme.bg, 1) : Theme.textDim
         }
         MouseArea {
             anchors.fill: parent
@@ -197,7 +197,7 @@ Item {
             implicitWidth: 40
             implicitHeight: 40
             radius: 14
-            hoverColor: Qt.rgba(1, 1, 1, 0.06)
+            hoverColor: Qt.alpha(Theme.text, 0.06)
             enabled: big.usable
             accessibleName: big.hasMenu ? `${big.title} options` : big.title
             onClicked: big.hasMenu ? big.opened() : big.toggled()
@@ -211,7 +211,7 @@ Item {
                     NText { Layout.fillWidth: true; text: big.title; size: 12; weight: Font.DemiBold }
                     NText { Layout.fillWidth: true; text: big.subtitle; size: 11; color: Theme.textDim }
                 }
-                NIcon { visible: big.hasMenu; name: "go-next-symbolic"; size: 13; color: "#8E8E93" }
+                NIcon { visible: big.hasMenu; name: "go-next-symbolic"; size: 13; color: Theme.textTertiary }
             }
         }
     }
@@ -225,19 +225,19 @@ Item {
         Layout.preferredWidth: 1
         implicitHeight: 75
         radius: 23
-        color: checked ? Theme.text : "#1C1C1E"
-        hoverColor: checked ? "#E5E5EA" : "#26262A"
+        color: checked ? Theme.text : Theme.card
+        hoverColor: checked ? Theme.textSoft : Theme.cardHover
         accessibleName: title
         NIcon {
             x: 14; y: 13
             name: small.icon; size: 20
-            color: small.checked ? "#000000" : Theme.text
+            color: small.checked ? Qt.alpha(Theme.bg, 1) : Theme.text
         }
         NText {
             x: 14; width: parent.width - 28
             anchors.bottom: parent.bottom; anchors.bottomMargin: 13
             text: small.title; size: 12; weight: Font.DemiBold
-            color: small.checked ? "#000000" : Theme.text
+            color: small.checked ? Qt.alpha(Theme.bg, 1) : Theme.text
         }
     }
 
@@ -249,7 +249,7 @@ Item {
         implicitWidth: chipRow.implicitWidth + 22
         implicitHeight: 27
         radius: 14
-        color: "#1C1C1E"
+        color: Theme.card
         Row {
             id: chipRow
             anchors.centerIn: parent
@@ -271,7 +271,7 @@ Item {
         signal fire()
         implicitWidth: 43; implicitHeight: 43
         radius: 21.5
-        color: armed ? Theme.red : danger ? "#3A1210" : "#1C1C1E"
+        color: armed ? Theme.red : danger ? "#3A1210" : Theme.card
         hoverColor: armed ? Theme.red : danger ? "#4A1A16" : Theme.surface
         accessibleName: armable ? `${label} (click twice to confirm)` : label
         Timer { id: disarm; interval: 3000; onTriggered: power.armed = false }
@@ -347,8 +347,9 @@ Item {
                 Layout.preferredWidth: 6
                 Layout.alignment: Qt.AlignTop
                 implicitHeight: bigGrid.implicitHeight + 26
-                radius: 25
-                color: "#1C1C1E"
+                radius: Theme.cardRadius + 2
+                color: Theme.card
+                border.color: Theme.cardBorder; border.width: Theme.cardBorderW
                 GridLayout {
                     id: bigGrid
                     anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
@@ -421,7 +422,7 @@ Item {
                 }
                 SmallToggle {
                     title: `Layout · ${tab.layoutName || "—"}`; icon: "input-keyboard-symbolic"
-                    hoverColor: tab.layoutCount > 1 ? "#26262A" : color
+                    hoverColor: tab.layoutCount > 1 ? Theme.cardHover : color
                     accessibleName: tab.layoutCount > 1 ? "Switch keyboard layout" : title
                     onClicked: tab.nextLayout()
                 }
@@ -449,7 +450,7 @@ Item {
                     required property var modelData
                     icon: `battery-${String(Math.min(100, Math.round(modelData.pct / 10) * 10)).padStart(3, "0")}-symbolic`
                     text: `${modelData.model} · ${modelData.pct}%`
-                    tint: modelData.pct < 20 ? Theme.red : "#E5E5EA"
+                    tint: modelData.pct < 20 ? Theme.red : Theme.textSoft
                 }
             }
         }
@@ -460,7 +461,7 @@ Item {
             NButton {
                 anchors.verticalCenter: parent.verticalCenter
                 implicitWidth: 31; implicitHeight: 31
-                color: "#1C1C1E"; hoverColor: Theme.surface
+                color: Theme.card; hoverColor: Theme.surface
                 accessibleName: "NexNotch settings"
                 onClicked: tab.notch.openSettings("")
                 NIcon { anchors.centerIn: parent; name: "own:sliders"; size: 14; color: Theme.textDim }
@@ -539,7 +540,7 @@ Item {
         implicitWidth: 100
         implicitHeight: 38
         radius: 12
-        hoverColor: Qt.rgba(1, 1, 1, 0.08)
+        hoverColor: Qt.alpha(Theme.text, 0.08)
         accessibleName: label
         RowLayout {
             anchors.fill: parent
@@ -565,10 +566,10 @@ Item {
             NButton {
                 implicitWidth: 28; implicitHeight: 28
                 radius: 14
-                hoverColor: Qt.rgba(1, 1, 1, 0.14)
+                hoverColor: Qt.alpha(Theme.text, 0.14)
                 accessibleName: "Back"
                 onClicked: tab.closeSubmenu()
-                NIcon { anchors.centerIn: parent; name: "go-previous-symbolic"; size: 16; color: Qt.rgba(1, 1, 1, 0.8) }
+                NIcon { anchors.centerIn: parent; name: "go-previous-symbolic"; size: 16; color: Qt.alpha(Theme.text, 0.8) }
             }
             NText { Layout.fillWidth: true; text: tab.current.title; size: 13; weight: Font.DemiBold }
         }
@@ -577,7 +578,7 @@ Item {
             Layout.fillWidth: true
             implicitHeight: listCol.implicitHeight + 12
             radius: 18
-            color: Qt.rgba(1, 1, 1, 0.06)
+            color: Qt.alpha(Theme.text, 0.06)
             ColumnLayout {
                 id: listCol
                 anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top

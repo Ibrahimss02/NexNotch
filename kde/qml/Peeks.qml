@@ -30,23 +30,23 @@ QtObject {
         const shot = isScreenshot(n);
         if (quiet && !shot && n.urgency !== 2) return;
         if (shot) {
-            notch.showPeek(screenshotComp, {n}, {width: 306, height: 65, duration: notch.powerPeekMs,
+            notch.showPeek(screenshotComp, {n}, {kind: "notification", width: 306, height: 65, duration: notch.powerPeekMs,
                 onClick: () => Services.notifications.activate(n)});
             return;
         }
-        notch.showPeek(notificationComp, {n}, {width: 440, fit: true, minHeight: 72, maxHeight: 240});
+        notch.showPeek(notificationComp, {n}, {kind: "notification", width: 440, fit: true, minHeight: 72, maxHeight: 240});
     }
 
     function music(info) {
         if (quiet || !allowed) return;
-        notch.showPeek(musicComp, {info}, {width: 324, height: 72,
+        notch.showPeek(musicComp, {info}, {kind: "music", width: 324, height: 72,
             onClick: () => { notch.switchTab("history"); notch.expand(); }});
     }
 
     /* charger plugged in or out; UPower reports it at once, unlike the battery poll */
     function charger(info) {
         if (!allowed) return;
-        notch.showPeek(chargerComp, {info}, {width: 212, height: notch.ch, duration: notch.powerPeekMs});
+        notch.showPeek(chargerComp, {info}, {kind: "charger", width: 212, height: notch.ch, duration: notch.powerPeekMs});
     }
 
     /* repeated key presses update the same peek and keep it open */
@@ -58,13 +58,13 @@ QtObject {
             notch.armPeekTimer(notch.osdMs);
             return;
         }
-        notch.showPeek(osdComp, {icon, level, maxLevel, label}, {width: 270, height: 32, duration: notch.osdMs, hold: false});
+        notch.showPeek(osdComp, {icon, level, maxLevel, label}, {kind: "toggle", width: 270, height: 32, duration: notch.osdMs, hold: false});
     }
 
     /* "Do Not Disturb · On" / "Airplane Mode · Off" / "Caps Lock · On" */
     function toggle(kind, on) {
         if (!allowed) return;
-        notch.showPeek(toggleComp, {kind, on}, {width: kind === "capslock" ? 212 : 252, height: notch.ch, duration: notch.powerPeekMs});
+        notch.showPeek(toggleComp, {kind, on}, {kind: "toggle", width: kind === "capslock" ? 212 : 252, height: notch.ch, duration: notch.powerPeekMs});
     }
 
     /* camera or mic just started: which one, and the app using the mic */
@@ -83,7 +83,7 @@ QtObject {
 
     function water() {
         if (quiet || !allowed) return;
-        notch.showPeek(waterComp, {}, {width: 324, height: 72,
+        notch.showPeek(waterComp, {}, {kind: "water", width: 324, height: 72,
             onClick: () => { notch.switchTab("water"); notch.expand(); }});
     }
 
@@ -91,12 +91,12 @@ QtObject {
     function drop(state) {
         const cur = notch.peekItem;
         if (cur && cur.isDrop) { cur.dropState = state; return; }
-        if (state === "hover") notch.showPeek(dropComp, {dropState: state}, {width: 504, height: 170, duration: 0, hold: false});
-        else notch.showPeek(dropComp, {dropState: state}, {width: 288, height: 54, duration: 0, hold: false});
+        if (state === "hover") notch.showPeek(dropComp, {dropState: state}, {kind: "water", width: 504, height: 170, duration: 0, hold: false});
+        else notch.showPeek(dropComp, {dropState: state}, {kind: "water", width: 288, height: 54, duration: 0, hold: false});
     }
 
     function shelfAdded(n) {
-        notch.showPeek(shelfAddedComp, {count: n}, {width: 234, height: notch.ch, duration: notch.shelfPeekMs,
+        notch.showPeek(shelfAddedComp, {count: n}, {kind: "water", width: 234, height: notch.ch, duration: notch.shelfPeekMs,
             onClick: () => { notch.switchTab("shelf"); notch.expand(); }});
     }
 

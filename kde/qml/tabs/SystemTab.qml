@@ -51,8 +51,9 @@ Item {
         Layout.fillHeight: true
         Layout.preferredWidth: 1            // equal widths, like a homogeneous box
         implicitHeight: cardCol.implicitHeight + 26
-        radius: 22
-        color: "#1C1C1E"
+        radius: Theme.cardRadius - 1
+        color: Theme.card
+        border.color: Theme.cardBorder; border.width: Theme.cardBorderW
         ColumnLayout {
             id: cardCol
             anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top
@@ -122,8 +123,9 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: list.implicitHeight + 8
-            radius: 23
-            color: "#1C1C1E"
+            radius: Theme.cardRadius
+            color: Theme.card
+            border.color: Theme.cardBorder; border.width: Theme.cardBorderW
             ColumnLayout {
                 id: list
                 anchors.fill: parent

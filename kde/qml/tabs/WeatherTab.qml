@@ -23,7 +23,7 @@ Item {
             implicitWidth: seg.implicitWidth + 3.6
             implicitHeight: seg.implicitHeight + 3.6
             radius: 9
-            color: "#1C1C1E"
+            color: Theme.card
             Row {
                 id: seg
                 anchors.centerIn: parent
@@ -37,8 +37,8 @@ Item {
                         implicitWidth: Math.max(76, segLabel.implicitWidth + 18)
                         implicitHeight: 27
                         radius: 7
-                        color: on ? "#48484A" : "transparent"
-                        hoverColor: on ? "#48484A" : Theme.surface
+                        color: on ? Theme.disabled : "transparent"
+                        hoverColor: on ? Theme.disabled : Theme.surface
                         accessibleName: modelData[1]
                         onClicked: tab.w.active = modelData[0]
                         NText {
@@ -47,7 +47,7 @@ Item {
                             text: segBtn.modelData[1]
                             size: 12
                             weight: segBtn.on ? Font.DemiBold : Font.Medium
-                            color: segBtn.on ? Theme.text : "#E5E5EA"
+                            color: segBtn.on ? Theme.text : Theme.textSoft
                         }
                     }
                 }
@@ -59,8 +59,9 @@ Item {
             Layout.fillWidth: true
             visible: !tab.v
             implicitHeight: msg.implicitHeight + 44
-            radius: 23
-            color: "#1C1C1E"
+            radius: Theme.cardRadius
+            color: Theme.card
+            border.color: Theme.cardBorder; border.width: Theme.cardBorderW
             Column {
                 id: msg
                 anchors.centerIn: parent
@@ -92,8 +93,9 @@ Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.minimumHeight: 124
-                radius: 23
-                color: "#1C1C1E"
+                radius: Theme.cardRadius
+                color: Theme.card
+                border.color: Theme.cardBorder; border.width: Theme.cardBorderW
 
                 ColumnLayout {
                     anchors { left: parent.left; right: parent.right; top: parent.top; margins: 14; leftMargin: 18; rightMargin: 18 }
@@ -116,7 +118,7 @@ Item {
                     anchors { right: parent.right; top: parent.top; rightMargin: 18; topMargin: 14 }
                     name: tab.w.icon(tab.v?.code)
                     size: 36
-                    color: "#C7C7CC"
+                    color: Theme.themed ? Theme.textDim : "#C7C7CC"
                 }
                 NText {
                     id: temp
@@ -162,8 +164,9 @@ Item {
             Layout.fillWidth: true
             visible: !!tab.v && tab.v.days.length > 0
             implicitHeight: days.implicitHeight + 8
-            radius: 23
-            color: "#1C1C1E"
+            radius: Theme.cardRadius
+            color: Theme.card
+            border.color: Theme.cardBorder; border.width: Theme.cardBorderW
             Column {
                 id: days
                 readonly property var list: tab.v?.days ?? []
@@ -200,7 +203,7 @@ Item {
                                 Layout.preferredWidth: 32
                                 name: tab.w.icon(dayRow.modelData.code)
                                 size: 20
-                                color: "#C7C7CC"
+                                color: Theme.themed ? Theme.textDim : "#C7C7CC"
                             }
                             NText {
                                 Layout.preferredWidth: 36
@@ -232,8 +235,9 @@ Item {
         property string value
         property string unit
         implicitHeight: tileCol.implicitHeight + 22
-        radius: 18
-        color: "#1C1C1E"
+        radius: Math.min(18, Theme.cardRadius)
+        color: Theme.card
+        border.color: Theme.cardBorder; border.width: Theme.cardBorderW
         Column {
             id: tileCol
             anchors { left: parent.left; right: parent.right; verticalCenter: parent.verticalCenter; leftMargin: 13; rightMargin: 13 }
@@ -265,7 +269,7 @@ Item {
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width; height: 5; radius: 2.5
-            color: "#2C2C2E"
+            color: Theme.surface
         }
         Rectangle {
             anchors.verticalCenter: parent.verticalCenter
@@ -278,8 +282,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             x: parent.xOf(Math.min(parent.hi, Math.max(parent.lo, parent.now))) - 6.5
             width: 13; height: 13; radius: 6.5
-            color: "#1C1C1E"
-            Rectangle { anchors.centerIn: parent; width: 9; height: 9; radius: 4.5; color: "white" }
+            color: Theme.card
+            Rectangle { anchors.centerIn: parent; width: 9; height: 9; radius: 4.5; color: Theme.text }
         }
     }
 }

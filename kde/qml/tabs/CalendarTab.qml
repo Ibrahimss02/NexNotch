@@ -61,8 +61,9 @@ Item {
             Layout.preferredWidth: 241
             Layout.alignment: Qt.AlignTop
             implicitHeight: monthCol.implicitHeight + 24
-            radius: 23
-            color: "#1C1C1E"
+            radius: Theme.cardRadius
+            color: Theme.card
+            border.color: Theme.cardBorder; border.width: Theme.cardBorderW
 
             Column {
                 id: monthCol
@@ -102,7 +103,7 @@ Item {
                             width: monthCol.width / 7; height: 20
                             horizontalAlignment: Text.AlignHCenter
                             text: modelData
-                            size: 10; weight: Font.DemiBold; color: "#8E8E93"
+                            size: 10; weight: Font.DemiBold; color: Theme.textTertiary
                         }
                     }
                 }
@@ -126,8 +127,8 @@ Item {
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 width: 27; height: 27
                                 radius: 14
-                                color: cell.today ? Theme.red : cell.selected ? "#48484A" : "transparent"
-                                hoverColor: cell.today ? Theme.red : cell.selected ? "#48484A" : Theme.surface
+                                color: cell.today ? Theme.red : cell.selected ? Theme.disabled : "transparent"
+                                hoverColor: cell.today ? Theme.red : cell.selected ? Theme.disabled : Theme.surface
                                 accessibleName: Qt.locale().toString(cell.date, Locale.LongFormat)
                                 onClicked: cal.selectedDay = cell.selected ? null : cell.date
                                 Rectangle {
@@ -135,14 +136,14 @@ Item {
                                     anchors.centerIn: parent
                                     width: 23; height: 23; radius: 11.5
                                     color: "transparent"
-                                    border { width: 2; color: "white" }
+                                    border { width: 2; color: Theme.text }
                                 }
                                 NText {
                                     anchors.centerIn: parent
                                     text: cell.day
                                     size: 13; tnum: true
                                     weight: cell.today || cell.selected ? Font.DemiBold : Font.Normal
-                                    color: cell.today || cell.selected ? Theme.text : "#E5E5EA"
+                                    color: cell.today || cell.selected ? Theme.text : Theme.textSoft
                                 }
                             }
                             Rectangle {
@@ -162,8 +163,9 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            radius: 23
-            color: "#1C1C1E"
+            radius: Theme.cardRadius
+            color: Theme.card
+            border.color: Theme.cardBorder; border.width: Theme.cardBorderW
 
             ColumnLayout {
                 anchors { fill: parent; leftMargin: 16; rightMargin: 16; topMargin: 14; bottomMargin: 14 }
@@ -199,8 +201,8 @@ Item {
                                     implicitWidth: modeLabel.implicitWidth + 16
                                     implicitHeight: 19
                                     radius: 5.5
-                                    color: on ? "#48484A" : "transparent"
-                                    hoverColor: on ? "#48484A" : Theme.surfaceHi
+                                    color: on ? Theme.disabled : "transparent"
+                                    hoverColor: on ? Theme.disabled : Theme.surfaceHi
                                     accessibleName: modelData[1]
                                     onClicked: tab.showTasks = modelData[0]
                                     NText {
@@ -209,7 +211,7 @@ Item {
                                         text: modeBtn.modelData[1]
                                         size: 11
                                         weight: modeBtn.on ? Font.DemiBold : Font.Medium
-                                        color: modeBtn.on ? Theme.text : "#E5E5EA"
+                                        color: modeBtn.on ? Theme.text : Theme.textSoft
                                     }
                                 }
                             }
@@ -242,7 +244,7 @@ Item {
                 anchors.centerIn: parent
                 width: parent.width
                 spacing: 9
-                NIcon { anchors.horizontalCenter: parent.horizontalCenter; name: "view-calendar-month-symbolic"; size: 31; color: "#636366" }
+                NIcon { anchors.horizontalCenter: parent.horizontalCenter; name: "view-calendar-month-symbolic"; size: 31; color: Theme.dot }
                 NText {
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
@@ -343,8 +345,8 @@ Item {
                             implicitWidth: listLabel.implicitWidth + 18
                             implicitHeight: 26
                             radius: 7
-                            color: on ? "#48484A" : "transparent"
-                            hoverColor: on ? "#48484A" : Theme.surface
+                            color: on ? Theme.disabled : "transparent"
+                            hoverColor: on ? Theme.disabled : Theme.surface
                             onClicked: { tv.active = modelData.id; tv.composing = false; }
                             NText {
                                 id: listLabel
@@ -390,7 +392,7 @@ Item {
                         spacing: 8
                         NButton {
                             implicitWidth: cancelLabel.implicitWidth + 24; implicitHeight: 24
-                            color: Qt.rgba(1, 1, 1, 0.06)
+                            color: Qt.alpha(Theme.text, 0.06)
                             onClicked: tv.composing = false
                             NText { id: cancelLabel; anchors.centerIn: parent; text: "Cancel"; size: 11; weight: Font.Bold; color: Theme.textMuted }
                         }
@@ -450,7 +452,7 @@ Item {
                                 anchors.fill: parent
                                 radius: 9
                                 color: "transparent"
-                                border { width: 1.5; color: task.modelData.done ? Theme.green : "#636366" }
+                                border { width: 1.5; color: task.modelData.done ? Theme.green : Theme.dot }
                             }
                             NText {
                                 visible: task.modelData.done
@@ -464,7 +466,7 @@ Item {
                                 width: parent.width
                                 text: task.modelData.title
                                 size: 13; weight: Font.Medium
-                                color: task.modelData.done ? Qt.rgba(1, 1, 1, 0.4) : Theme.text
+                                color: task.modelData.done ? Qt.alpha(Theme.text, 0.4) : Theme.text
                                 font.strikeout: task.modelData.done
                             }
                             NText {
@@ -519,7 +521,7 @@ Item {
         Rectangle {
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
             height: 1
-            color: Qt.rgba(1, 1, 1, 0.08)
+            color: Qt.alpha(Theme.text, 0.08)
         }
     }
 }

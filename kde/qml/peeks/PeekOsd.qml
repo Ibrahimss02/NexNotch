@@ -29,7 +29,7 @@ Item {
             horizontalAlignment: Text.AlignRight
             text: peek.level >= 0 ? `${Math.round(peek.level * 100)}%` : peek.label
             size: 11; weight: Font.DemiBold; tnum: true
-            color: Qt.rgba(1, 1, 1, 0.75)
+            color: Qt.alpha(Theme.text, 0.75)
         }
     }
 }

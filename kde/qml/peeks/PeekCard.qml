@@ -39,6 +39,7 @@ RowLayout {
                 size: card.styles[modelData[1]].size
                 weight: card.styles[modelData[1]].weight
                 color: card.styles[modelData[1]].color
+                title: modelData[1] === "title"
             }
         }
     }

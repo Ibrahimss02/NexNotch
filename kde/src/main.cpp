@@ -10,6 +10,8 @@
 #include <QDBusConnection>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
+#include <QDir>
+#include <QFontDatabase>
 #include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQuickStyle>
@@ -104,6 +106,10 @@ int main(int argc, char *argv[])
     /* the notch draws its own controls; the settings window uses Plasma's style */
     QQuickStyle::setStyle(QStringLiteral("org.kde.desktop"));
     QQuickStyle::setFallbackStyle(QStringLiteral("Fusion"));
+
+    /* the themes' display fonts, bundled so a theme looks the same everywhere */
+    for (const QString &f : QDir(QStringLiteral(":/qt/qml/NexNotch/fonts")).entryList({QStringLiteral("*.ttf")}))
+        QFontDatabase::addApplicationFont(QStringLiteral(":/qt/qml/NexNotch/fonts/") + f);
 
     QQmlApplicationEngine engine;
     engine.setInitialProperties({

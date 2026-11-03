@@ -16,14 +16,14 @@ Item {
         width: 20 * root.sx; height: 10.5 * root.sy
         radius: 3 * root.sx
         color: "transparent"
-        border.color: Qt.rgba(0.56, 0.56, 0.58, 1)
+        border.color: Theme.themed ? Theme.textDim : Qt.rgba(0.56, 0.56, 0.58, 1)
         border.width: 1.5 * root.sx
     }
     Rectangle {
         x: 22 * root.sx; y: 4 * root.sy
         width: 1.6 * root.sx; height: 4 * root.sy
         radius: 0.8 * root.sx
-        color: Qt.rgba(0.56, 0.56, 0.58, 1)
+        color: Theme.themed ? Theme.textDim : Qt.rgba(0.56, 0.56, 0.58, 1)
     }
     Rectangle {
         visible: root.level > 0

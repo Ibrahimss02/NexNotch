@@ -12,7 +12,7 @@ Rectangle {
     readonly property color accent: media.accent
 
     radius: 27
-    color: "#26262A"
+    color: Theme.cardHover
     clip: true
     implicitHeight: shade.implicitHeight
 
@@ -73,7 +73,7 @@ Rectangle {
                             }
                         }
                     }
-                    NText { Layout.fillWidth: true; text: card.info.title || "Unknown"; size: 16; weight: Font.DemiBold }
+                    NText { Layout.fillWidth: true; text: card.info.title || "Unknown"; size: 16; weight: Font.DemiBold; title: true }
                     NText { Layout.fillWidth: true; visible: !!card.info.artist; text: card.info.artist ?? ""; size: 13; color: Theme.textDim }
                 }
                 Waveform { bars: 5; barWidth: 4; barHeight: 20; color: card.accent; playing: !!card.info.playing }
@@ -245,7 +245,7 @@ Rectangle {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: lyr.lines?.[lyr.shown - 1]?.text ?? ""
-                size: 11; color: Qt.rgba(1, 1, 1, 0.45)
+                size: 11; color: Qt.alpha(Theme.text, 0.45)
             }
             NText {
                 Layout.fillWidth: true
@@ -259,7 +259,7 @@ Rectangle {
                 Layout.fillWidth: true
                 horizontalAlignment: Text.AlignHCenter
                 text: lyr.lines?.[lyr.shown + 1]?.text ?? ""
-                size: 11; color: Qt.rgba(1, 1, 1, 0.45)
+                size: 11; color: Qt.alpha(Theme.text, 0.45)
             }
         }
         NumberAnimation { id: glide; target: box; property: "dy"; to: 0; duration: 340; easing.type: Easing.OutCubic }

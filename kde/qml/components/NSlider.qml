@@ -5,7 +5,7 @@ import QtQuick
 Item {
     id: root
     property real value: 0
-    property color track: Qt.rgba(1, 1, 1, 0.22)
+    property color track: Qt.alpha(Theme.text, 0.22)
     property color fill: Theme.text
     property real barHeight: 4
     property bool interactive: true

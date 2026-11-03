@@ -31,8 +31,9 @@ Item {
         Layout.fillWidth: true
         Layout.preferredWidth: 1            // equal widths, like a homogeneous box
         implicitHeight: row.implicitHeight + 32
-        radius: 23
-        color: "#1C1C1E"
+        radius: Theme.cardRadius
+        color: Theme.card
+        border.color: Theme.cardBorder; border.width: Theme.cardBorderW
         RowLayout {
             id: row
             anchors.fill: parent
@@ -70,8 +71,9 @@ Item {
             visible: !tab.usage
             Layout.fillWidth: true
             implicitHeight: msg.implicitHeight + 44
-            radius: 23
-            color: "#1C1C1E"
+            radius: Theme.cardRadius
+            color: Theme.card
+            border.color: Theme.cardBorder; border.width: Theme.cardBorderW
             ColumnLayout {
                 id: msg
                 anchors.centerIn: parent

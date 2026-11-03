@@ -19,7 +19,7 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             width: seg.width + 3.6; height: seg.height + 3.6
             radius: 9
-            color: "#1C1C1E"
+            color: Theme.card
             Row {
                 id: seg
                 anchors.centerIn: parent
@@ -33,8 +33,8 @@ Item {
                         implicitWidth: Math.max(76, segLabel.implicitWidth + 18)
                         implicitHeight: 27
                         radius: 7
-                        color: on ? "#48484A" : "transparent"
-                        hoverColor: on ? "#48484A" : Theme.surface
+                        color: on ? Theme.disabled : "transparent"
+                        hoverColor: on ? Theme.disabled : Theme.surface
                         accessibleName: `${modelData} minutes`
                         onClicked: tab.pomo.setPreset(modelData)
                         NText {
@@ -43,7 +43,7 @@ Item {
                             text: modelData.replace("/", " / ")
                             size: 12
                             weight: segBtn.on ? Font.DemiBold : Font.Medium
-                            color: segBtn.on ? Theme.text : "#E5E5EA"
+                            color: segBtn.on ? Theme.text : Theme.textSoft
                         }
                     }
                 }
@@ -109,7 +109,7 @@ Item {
                     required property int index
                     anchors.verticalCenter: parent.verticalCenter
                     width: 7; height: 7; radius: 3.5
-                    color: index < parent.done ? Theme.orange : "#48484A"
+                    color: index < parent.done ? Theme.orange : Theme.disabled
                 }
             }
             NText {
@@ -145,7 +145,8 @@ Item {
         id: btn
         property string label
         property string kind: ""
-        readonly property color base: kind === "go" ? "#0E3A1C" : kind === "hold" ? "#3A2A0E" : "#333336"
+        readonly property color base: Theme.themed ? (kind === "go" ? Qt.alpha(Theme.green, 0.2) : kind === "hold" ? Qt.alpha(Theme.orange, 0.2) : Theme.surface)
+            : kind === "go" ? "#0E3A1C" : kind === "hold" ? "#3A2A0E" : "#333336"
         readonly property color fg: kind === "go" ? Theme.green : kind === "hold" ? Theme.orange : Theme.text
         implicitWidth: 76; implicitHeight: 76
         radius: 38
@@ -156,12 +157,13 @@ Item {
         Rectangle {
             anchors.centerIn: parent
             width: 72; height: 72; radius: 36
-            color: "black"
+            color: Theme.themed ? Qt.alpha(Theme.bg, 1) : "black"
             Rectangle {
                 anchors.centerIn: parent
                 width: 68; height: 68; radius: 34
                 color: btn.pressed || btn.hovered
-                    ? (btn.kind === "go" ? "#134A25" : btn.kind === "hold" ? "#4A3612" : "#3D3D40") : btn.base
+                    ? (Theme.themed ? (btn.kind === "go" ? Qt.alpha(Theme.green, 0.3) : btn.kind === "hold" ? Qt.alpha(Theme.orange, 0.3) : Theme.surfaceHi)
+                        : btn.kind === "go" ? "#134A25" : btn.kind === "hold" ? "#4A3612" : "#3D3D40") : btn.base
                 Behavior on color { ColorAnimation { duration: 120 } }
             }
         }

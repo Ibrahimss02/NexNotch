@@ -20,6 +20,7 @@ QQC2.ApplicationWindow {
     readonly property var pages: [
         {id: "general",       title: "General",       icon: "preferences-system",                    file: "GeneralSettings.qml"},
         {id: "appearance",    title: "Appearance",    icon: "preferences-desktop-color",             file: "AppearanceSettings.qml"},
+        {id: "theme",         title: "Theme",         icon: "preferences-desktop-theme-global",      file: "ThemeSettings.qml"},
         {id: "clock",         title: "Clock",         icon: "preferences-system-time",               file: "ClockSettings.qml"},
         {id: "notifications", title: "Notifications", icon: "preferences-desktop-notification-bell", file: "NotificationsSettings.qml"},
         {id: "weather",       title: "Weather",       icon: "weather-few-clouds",                    file: "WeatherSettings.qml"},

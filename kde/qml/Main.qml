@@ -14,7 +14,7 @@ QtObject {
     property NotchWindow window: NotchWindow {
         id: win
         title: "NexNotch"
-        width: Math.max(Config.expandedWidth, 504) + 2 * Theme.earPx + 2 * app.margin + 40
+        width: Math.max(Config.expandedWidth, 504) + 2 * Theme.earPx + 2 * app.margin + 96
         height: notch.maxExpandedHeight + 2 * app.margin
         exclusiveZone: Config.reserveSpace ? Config.collapsedHeight : 0
         keyboardFocus: notch.wantsKeyboard || (notch.expanded && notch.keyboardOpened)
@@ -108,7 +108,7 @@ QtObject {
         }
     }
 
-    /* For development: "tab=weather;peek=;wait=1500;out=/tmp/x.png;quit" opens
+    /* For development: "tab=weather;theme=loong;wait=1500;out=/tmp/x.png;quit" opens
        a tab (or shows a peek), waits, saves a screenshot of the window, and
        optionally quits. "settings=<page>" captures that settings page instead.
        Works with QT_QPA_PLATFORM=offscreen. */
@@ -118,6 +118,7 @@ QtObject {
             const [k, v] = part.split("=");
             if (k) o[k.trim()] = v === undefined ? true : v;
         }
+        if (o.theme) Theme.preview = o.theme;
         if (o.tab) { notch.switchTab(o.tab); notch.expand(); }
         if (o.peek) demoPeek(o.peek);
         /* the island states, without a real window under the notch */

@@ -125,8 +125,9 @@ Item {
         signal act()
         Layout.fillWidth: true
         implicitHeight: lrRow.implicitHeight + 22
-        radius: 20
-        color: "#1C1C1E"
+        radius: Math.min(20, Theme.cardRadius)
+        color: Theme.card
+        border.color: Theme.cardBorder; border.width: Theme.cardBorderW
 
         RowLayout {
             id: lrRow
@@ -155,7 +156,7 @@ Item {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
                 spacing: 2
-                NText { Layout.fillWidth: true; text: lr.title; size: 14; weight: Font.DemiBold }
+                NText { Layout.fillWidth: true; text: lr.title; size: 14; weight: Font.DemiBold; title: true }
                 NText { Layout.fillWidth: true; visible: !!lr.subtitle; text: lr.subtitle; size: 12; tnum: true; color: Theme.textDim }
             }
             NButton {
@@ -189,7 +190,7 @@ Item {
         Rectangle {
             anchors.fill: parent
             radius: 20
-            color: hcHover.hovered ? "#232326" : "#1C1C1E"
+            color: hcHover.hovered ? Theme.cardHover : Theme.card
         }
         MouseArea {
             anchors.fill: parent
@@ -220,7 +221,7 @@ Item {
                 spacing: 2
                 RowLayout {
                     Layout.fillWidth: true
-                    NText { Layout.fillWidth: true; text: hc.n.summary || hc.n.appName || ""; size: 14; weight: Font.DemiBold }
+                    NText { Layout.fillWidth: true; text: hc.n.summary || hc.n.appName || ""; size: 14; weight: Font.DemiBold; title: true }
                     NText { text: tab.store.timeLabel(hc.n.time); size: 11; color: Theme.textDim; leftPadding: 7 }
                 }
                 NText {
@@ -238,7 +239,7 @@ Item {
             width: 18; height: 18; radius: 9
             opacity: hcHover.hovered ? 1 : 0
             Behavior on opacity { NumberAnimation { duration: 120 } }
-            color: Theme.dot; hoverColor: "#8E8E93"; pressColor: "#8E8E93"
+            color: Theme.dot; hoverColor: Theme.textTertiary; pressColor: Theme.textTertiary
             accessibleName: "Dismiss notification"
             onClicked: tab.store.dismiss(hc.n.id)
             Rectangle { anchors.fill: parent; radius: 9; color: "transparent"; border.color: "black"; border.width: 1 }

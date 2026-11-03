@@ -67,7 +67,7 @@ Item {
                 x: -3; y: -3
                 width: 18; height: 18; radius: 9
                 opacity: peek.open ? 1 : 0
-                color: Theme.dot; hoverColor: "#8E8E93"; pressColor: "#8E8E93"
+                color: Theme.dot; hoverColor: Theme.textTertiary; pressColor: Theme.textTertiary
                 accessibleName: "Dismiss notification"
                 onClicked: { Services.notifications.dismiss(peek.n.id); peek.notch.dismissPeek(false); }
                 Rectangle { anchors.fill: parent; radius: 9; color: "transparent"; border.color: "black"; border.width: 1 }
@@ -83,7 +83,7 @@ Item {
             spacing: 1
             RowLayout {
                 Layout.fillWidth: true
-                NText { Layout.fillWidth: true; text: peek.n.summary || peek.n.appName || "Notification"; size: 13; weight: Font.DemiBold }
+                NText { Layout.fillWidth: true; text: peek.n.summary || peek.n.appName || "Notification"; size: 13; weight: Font.DemiBold; title: true }
                 NText { text: "now"; size: 11; color: Theme.textDim; leftPadding: 6 }
             }
             NText {
@@ -108,7 +108,7 @@ Item {
                         required property var modelData
                         implicitWidth: label.implicitWidth + 24
                         implicitHeight: 24
-                        color: Qt.rgba(1, 1, 1, 0.1); hoverColor: Qt.rgba(1, 1, 1, 0.18)
+                        color: Qt.alpha(Theme.text, 0.1); hoverColor: Qt.alpha(Theme.text, 0.18)
                         onClicked: { Services.notifications.invoke(peek.n, modelData.key); peek.notch.dismissPeek(false); }
                         NText { id: label; anchors.centerIn: parent; text: actionBtn.modelData.label; size: 11; weight: Font.DemiBold }
                     }

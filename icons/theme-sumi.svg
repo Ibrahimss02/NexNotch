@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="70" height="48" viewBox="0 0 70 48">
+<path d="M68 2 C52 6, 38 26, 6 40" fill="none" stroke="#EFE7D6" stroke-width="2.6" stroke-linecap="round" opacity="0.85"/>
+<circle cx="10" cy="44" r="1.6" fill="#EFE7D6" opacity="0.8"/><circle cx="18" cy="42" r="1" fill="#EFE7D6" opacity="0.7"/>
+<rect x="30" y="8" width="20" height="20" rx="2" fill="#B22222"/>
+<text x="40" y="23" text-anchor="middle" font-family="Noto Serif CJK SC" font-weight="900" font-size="13" fill="#F7EFE0">墨</text>
+</svg>

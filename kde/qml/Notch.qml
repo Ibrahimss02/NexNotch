@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Shapes
+import QtQuick.Effects
 
 /* The notch: a pill at the top centre that springs open into the tabbed hub
    on hover and peeks open for events. Ported from the GNOME extension's
@@ -47,7 +48,9 @@ Item {
     readonly property int ch: Config.collapsedHeight
     readonly property int ew: Config.expandedWidth
     readonly property int eh: Config.expandedHeight
-    readonly property real radius: Math.round(Math.min(Config.cornerRadius, height / 2))
+    readonly property real radius: Math.round(Math.min(Theme.cornerRadius, height / 2))
+    /* camera, mic and other peeks the theme mustn't touch show plain */
+    Binding { target: Theme; property: "plain"; value: notch.peekActive && !Config.themePeeks.includes(notch.peekOpts.kind ?? "") }
 
     /* A window behind the notch: it lets go of the screen edge and floats as
        an island, rounded all round. At rest it hides, shrunk to a small spot
@@ -507,6 +510,44 @@ Item {
     /* lyrics on: the pill fades from the notch colour into the cover's */
     readonly property color lyricTint: pill.mode === "lyric" ? Qt.darker(Services.media.accent, 2) : "transparent"
 
+    /* theme: a soft glow and a hard offset shadow under the notch, and an
+       ornament hanging off each ear (it shrinks with the pill) */
+    RectangularShadow {
+        anchors.fill: parent
+        visible: !!Theme.glow && !notch.compact
+        color: Theme.glow?.color ?? "transparent"
+        blur: Theme.glow?.blur ?? 0
+        offset.y: Theme.glow?.y ?? 0
+        radius: notch.radius
+    }
+    Rectangle {
+        visible: !!Theme.offset && !notch.compact
+        x: Theme.offset?.x ?? 0; y: Theme.offset?.y ?? 0
+        width: parent.width; height: parent.height
+        color: Theme.offset?.color ?? "transparent"
+        topLeftRadius: notch.radius * notch.island
+        topRightRadius: notch.radius * notch.island
+        bottomLeftRadius: notch.radius
+        bottomRightRadius: notch.radius
+    }
+    Repeater {
+        model: Theme.themed ? [false, true] : []
+        Image {
+            required property bool modelData
+            readonly property real grow: Math.max(0, Math.min(1, (notch.height - notch.ch) / 120))
+            readonly property real s: 0.75 + 0.25 * grow
+            readonly property real reach: -12.5 + 26.5 * grow     // the art's inner edge, from the notch's side
+            width: 70 * s; height: 48 * s
+            x: modelData ? notch.width - reach : reach - width
+            y: 0
+            source: Qt.resolvedUrl("icons/" + (modelData ? Theme.earRight : Theme.earLeft) + ".svg")
+            sourceSize: Qt.size(140, 96)
+            mirror: modelData && Theme.earRightMirrored
+            opacity: notch.compact ? 0 : 1
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+        }
+    }
+
     Rectangle {
         id: bg
         anchors.fill: parent
@@ -548,6 +589,46 @@ Item {
                 PathLine { x: modelData ? 0 : Theme.earPx; y: 0 }
             }
         }
+    }
+
+    /* theme frame: from the screen edge round the ears and the bottom, or
+       all the way round the island; Golden Loong adds an inner line */
+    Shape {
+        id: frameShape
+        visible: Theme.frameW > 0 && !notch.compact
+        preferredRendererType: Shape.CurveRenderer
+        readonly property real r: notch.radius
+        readonly property real w: notch.width
+        readonly property real h: notch.height
+        readonly property real e: Theme.earPx
+        opacity: 1 - notch.island
+        ShapePath {
+            fillColor: "transparent"
+            strokeColor: Theme.frame
+            strokeWidth: Theme.frameW
+            PathSvg {
+                path: { const p = frameShape, r = p.r, w = p.w, h = p.h, e = p.e;
+                    return `M ${-e} 0 A ${e} ${e} 0 0 1 0 ${e} L 0 ${h - r} A ${r} ${r} 0 0 0 ${r} ${h} L ${w - r} ${h} A ${r} ${r} 0 0 0 ${w} ${h - r} L ${w} ${e} A ${e} ${e} 0 0 1 ${w + e} 0`; }
+            }
+        }
+        ShapePath {
+            fillColor: "transparent"
+            strokeColor: Theme.frameIn
+            strokeWidth: 1
+            PathSvg {
+                path: { const p = frameShape, w = p.w, h = p.h, r = p.r, d = 4, ri = Math.max(r - d, 2);
+                    return `M ${d} 0 L ${d} ${h - r} A ${ri} ${ri} 0 0 0 ${r} ${h - d} L ${w - r} ${h - d} A ${ri} ${ri} 0 0 0 ${w - d} ${h - r} L ${w - d} 0`; }
+            }
+        }
+    }
+    Rectangle {
+        visible: Theme.frameW > 0 && !notch.compact
+        anchors.fill: parent
+        opacity: notch.island
+        color: "transparent"
+        radius: notch.radius
+        border.color: Theme.frame
+        border.width: Theme.frameW
     }
 
     Rectangle {
@@ -599,7 +680,8 @@ Item {
                     Layout.fillWidth: true
                     Layout.leftMargin: 7
                     Layout.rightMargin: 7
-                    NText { text: clock.time; size: 31; weight: Font.DemiBold; tnum: true; font.letterSpacing: -0.6 }
+                    NText { text: clock.time; size: Theme.clockSize; weight: Font.DemiBold; tnum: true; font.letterSpacing: -0.6
+                        font.family: Theme.clockFont; font.italic: Theme.titleItalic; font.pixelSize: size }
                     Item { Layout.fillWidth: true }
                     ColumnLayout {
                         spacing: 0
@@ -672,7 +754,7 @@ Item {
                                     height: hot ? 20 : dotZone.open ? 7 : 5
                                     y: (chipRow.height - height) / 2
                                     radius: height / 2
-                                    color: current ? Theme.text
+                                    color: current ? Theme.accent
                                         : hot ? Theme.surfaceHi
                                         : dotZone.open ? Theme.dot : Theme.disabled
                                     Behavior on width { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
@@ -689,7 +771,7 @@ Item {
                                             text: notch.tabLabels[chip.modelData]
                                             size: 11
                                             weight: Font.DemiBold
-                                            color: chip.current ? "#000000" : Theme.text
+                                            color: chip.current ? Theme.onAccent : Theme.text
                                             opacity: chip.hot ? 1 : 0
                                             Behavior on opacity { NumberAnimation { duration: chip.hot ? 220 : 120; easing.type: Easing.OutQuad } }
                                         }
