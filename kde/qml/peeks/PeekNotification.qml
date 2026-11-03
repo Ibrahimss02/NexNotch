@@ -17,7 +17,9 @@ Item {
         if (body.length > 360) body = body.slice(0, 360) + "…";
         return body.trim();
     }
-    implicitHeight: Math.max(iconTile.height, textCol.implicitHeight) + 20 + 14
+    /* the icon sits concentric with the notch's rounded end: same inset on all sides */
+    readonly property int inset: 14
+    implicitHeight: Math.max(iconTile.height, textCol.implicitHeight) + 2 * inset
     scale: 0.94
     Component.onCompleted: popIn.start()
     NumberAnimation { id: popIn; target: peek; property: "scale"; to: 1; duration: 300; easing.type: Easing.OutBack }
@@ -33,24 +35,25 @@ Item {
 
     RowLayout {
         anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 12
-        anchors.topMargin: 10
-        anchors.bottomMargin: 10
+        anchors.leftMargin: peek.inset
+        anchors.rightMargin: peek.inset + 6
+        anchors.topMargin: peek.inset
+        anchors.bottomMargin: peek.inset
         spacing: 12
 
         /* the dismiss button rides on the icon's corner, so it takes no room */
         Item {
-            Layout.alignment: Qt.AlignVCenter
-            implicitWidth: 43; implicitHeight: 43
+            Layout.alignment: Qt.AlignTop
+            implicitWidth: 44; implicitHeight: 44
             Rectangle {
                 id: iconTile
-                width: 43; height: 43; radius: 12
+                width: 44; height: 44
+                radius: Math.min(width / 2, Math.max(8, peek.notch.radius - peek.inset))
                 color: Theme.surface
                 RoundedImage {
                     visible: !!peek.n.image
                     anchors.fill: parent
-                    radius: 12
+                    radius: iconTile.radius
                     source: peek.n.image ?? ""
                 }
                 NIcon {
@@ -61,7 +64,7 @@ Item {
                 }
             }
             NButton {
-                x: -7; y: -7
+                x: -3; y: -3
                 width: 18; height: 18; radius: 9
                 opacity: peek.open ? 1 : 0
                 color: Theme.dot; hoverColor: "#8E8E93"; pressColor: "#8E8E93"
@@ -76,7 +79,7 @@ Item {
         ColumnLayout {
             id: textCol
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter
+            Layout.alignment: implicitHeight < iconTile.height ? Qt.AlignVCenter : Qt.AlignTop
             spacing: 1
             RowLayout {
                 Layout.fillWidth: true

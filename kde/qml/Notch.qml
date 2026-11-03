@@ -59,7 +59,30 @@ Item {
     readonly property int islandWidth: 120
     readonly property int islandDwellMs: 500
     readonly property bool compact: covered && !expanded && !peekActive
-    onCompactChanged: resizeCollapsed(true)
+    /* 0 → 1 as it lets go of the edge: drives the gap, the top corners and the ears together */
+    property real island: covered ? 1 : 0
+    Behavior on island { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+    onCompactChanged: {
+        const hide = compact;
+        bgFade.to = hide ? 0 : 1;
+        bgFade.duration = hide ? 300 : 180;
+        bgFade.easing.type = hide ? Easing.InCubic : Easing.OutCubic;
+        contentDelay.duration = hide ? 0 : 120;
+        contentFade.to = hide ? 0 : 1;
+        contentFade.duration = hide ? 120 : 220;
+        compactFade.restart();
+        if (!expanded && !peekActive) easeTo(restWidth(), ch, 340, hide ? Easing.InOutCubic : Easing.OutCubic);
+    }
+    /* hiding: the content goes first so the shrinking edge never cuts through it;
+       showing: the shape opens first and the content settles in after */
+    ParallelAnimation {
+        id: compactFade
+        NumberAnimation { id: bgFade; target: bg; property: "opacity" }
+        SequentialAnimation {
+            PauseAnimation { id: contentDelay }
+            NumberAnimation { id: contentFade; target: clipper; property: "opacity"; easing.type: Easing.OutQuad }
+        }
+    }
 
     signal openSettings(string page)
 
@@ -204,8 +227,8 @@ Item {
     }
 
     function expand() {
-        if (peekActive) dismissPeek(true);
         expanded = true;
+        if (peekActive) dismissPeek(false);
         expandedLayer.visible = true;
         clock.update();
         contentHost.tx = 0;
@@ -379,8 +402,9 @@ Item {
        fit, the height follows the peek's implicitHeight (clamped). */
     function showPeek(component, props, opts) {
         if (expanded) return null;
-        dismissPeek(true);
-        opts = Object.assign({duration: peekDurationMs, hold: true, onClick: null, fit: false, minHeight: 72, maxHeight: 240}, opts);
+        /* a peek replacing a peek cross-fades; the notch stays open between them */
+        if (peekActive) { fadeOutPeek(peekItem); peekItem = null; }
+        opts =Object.assign({duration: peekDurationMs, hold: true, onClick: null, fit: false, minHeight: 72, maxHeight: 240}, opts);
         const item = component.createObject(peekHost, Object.assign({notch: notch}, props ?? {}));
         if (!item) return null;
         item.anchors.fill = peekHost;
@@ -408,20 +432,40 @@ Item {
     Timer { id: peekTimer; onTriggered: notch.dismissPeek(false) }
     NumberAnimation { id: peekIn; property: "opacity"; to: 1; duration: 180; easing.type: Easing.OutQuad }
 
+    /* Like collapse: the peek fades while the notch springs back, and the pill
+       fades in before it's done, so it never shrinks as an empty box. */
     function dismissPeek(immediate) {
         peekTimer.stop();
         if (!peekActive) return;
         peekActive = false;
         const item = peekItem;
         peekItem = null;
-        const finalize = () => {
-            item?.destroy();
-            if (expanded || peekActive) return;
-            pill.visible = true;
+        pill.visible = true;
+        if (immediate) item?.destroy(); else fadeOutPeek(item);
+        if (expanded) return;
+        if (immediate) {
             pill.opacity = 1;
             easeTo(restWidth(), ch, 220, Easing.OutExpo);
-        };
-        if (immediate) finalize(); else Qt.callLater(finalize);
+        } else {
+            pill.opacity = 0;
+            pillFade.restart();
+            springTo(restWidth(), ch, 520, 0.78);
+        }
+    }
+    function fadeOutPeek(item) {
+        if (peekOut.running) { peekOut.stop(); peekOut.victim?.destroy(); }
+        if (!item) return;
+        if (peekIn.target === item) peekIn.stop();
+        item.enabled = false;
+        peekOut.victim = item;
+        peekOutFade.target = item;
+        peekOut.restart();
+    }
+    SequentialAnimation {
+        id: peekOut
+        property var victim: null
+        NumberAnimation { id: peekOutFade; property: "opacity"; to: 0; duration: 140; easing.type: Easing.InQuad }
+        ScriptAction { script: { peekOut.victim?.destroy(); peekOut.victim = null; } }
     }
 
     property bool peekHovered: peekHover.hovered
@@ -466,11 +510,9 @@ Item {
     Rectangle {
         id: bg
         anchors.fill: parent
-        opacity: notch.compact ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: 220 } }
         color: Theme.bg
-        topLeftRadius: notch.covered ? notch.radius : 0
-        topRightRadius: notch.covered ? notch.radius : 0
+        topLeftRadius: notch.radius * notch.island
+        topRightRadius: notch.radius * notch.island
         bottomLeftRadius: notch.radius
         bottomRightRadius: notch.radius
         gradient: notch.lyricTint.a > 0 && !notch.expanded ? lyricGradient : null
@@ -490,8 +532,7 @@ Item {
             width: Theme.earPx; height: Theme.earPx
             x: modelData ? notch.width : -Theme.earPx
             y: 0
-            opacity: notch.covered ? 0 : 1
-            Behavior on opacity { NumberAnimation { duration: 160 } }
+            opacity: Math.max(0, 1 - 2 * notch.island)
             preferredRendererType: Shape.CurveRenderer
             ShapePath {
                 fillColor: Theme.bg
@@ -522,8 +563,6 @@ Item {
     Item {
         id: clipper
         anchors.fill: parent
-        opacity: notch.compact ? 0 : 1
-        Behavior on opacity { NumberAnimation { duration: 220 } }
         clip: true      // swiped tab content must not spill past the background
 
         Pill {

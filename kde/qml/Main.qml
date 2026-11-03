@@ -35,8 +35,7 @@ QtObject {
         Notch {
             id: notch
             x: Math.round((win.width - width) / 2)
-            y: covered ? islandGap : 0
-            Behavior on y { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+            y: islandGap * island
             focus: true
             /* windows on this screen reaching up under the notch's centre line */
             readonly property var reaching: Config.islandWhenCovered
