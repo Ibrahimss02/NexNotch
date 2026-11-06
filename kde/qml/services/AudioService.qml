@@ -130,7 +130,7 @@ QtObject {
     onSinkChanged: {
         const name = sink?.name ?? "";
         if (_lastSink && name && name !== _lastSink && _settled && Config.replaceOsd && Date.now() >= _ownUntil)
-            osd(sinkIcon(sink), -1, 1, sinkName);
+            osd(sinkIcon(sink), -1, 1, sink.description);
         if (name) _lastSink = name;
         _syncSinks();
     }
