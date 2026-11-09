@@ -8,7 +8,7 @@ QtObject {
     id: root
 
     readonly property var manager: BluezQt.Manager
-    readonly property bool available: manager.adapters.length > 0
+    readonly property bool available: manager.adapters.length > 0 || manager.bluetoothBlocked
     readonly property bool enabled: manager.bluetoothOperational
     /* [{address, name, icon, connected, busy, battery (-1 = unknown)}], connected first */
     property var devices: []
