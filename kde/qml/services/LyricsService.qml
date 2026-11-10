@@ -15,11 +15,13 @@ QtObject {
     function parseLrc(lrc) {
         const lines = [];
         for (const raw of (lrc ?? "").split("\n")) {
-            const stamps = [...raw.matchAll(/\[(\d+):(\d+(?:\.\d+)?)\]/g)];
-            if (!stamps.length) continue;
+            const stamps = raw.match(/\[\d+:\d+(?:\.\d+)?\]/g);
+            if (!stamps) continue;
             const text = raw.replace(/\[[^\]]*\]/g, "").trim();
-            for (const m of stamps)
-                lines.push({t: Math.round((Number(m[1]) * 60 + Number(m[2])) * 1000), text});
+            for (const s of stamps) {
+                const [min, sec] = s.slice(1, -1).split(":");
+                lines.push({t: Math.round((Number(min) * 60 + Number(sec)) * 1000), text});
+            }
         }
         return lines.sort((a, b) => a.t - b.t);
     }
